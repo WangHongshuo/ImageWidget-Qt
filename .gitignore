@@ -37,3 +37,11 @@ Makefile*
 # QtCtreator CMake
 CMakeLists.txt.user*
 
+# Ignore test file
+
+main.cpp
+mainwindow.cpp
+mainwindow.h
+mainwindow.ui
+Test_ImageWidget.pro
+
