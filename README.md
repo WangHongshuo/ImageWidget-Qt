@@ -14,10 +14,11 @@ There are two classes which can zoom in or zoom out images and crop the image.
 
 ## Change Log: ##
 
-- 2018.1.9:     
-Added more funciton in contextmenu, and this class will be a submodule.     
+- 2018.1.9: 
+           
+Added more funciton in contextmenu, and this class will be a submodule.           
 
-右键菜单加入了更多功能，将次类单独出来作为子模块。
+右键菜单加入了更多功能，将次类单独出来作为子模块。        
 
 - 2017.12.12:
 
