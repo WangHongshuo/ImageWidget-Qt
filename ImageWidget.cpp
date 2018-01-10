@@ -78,6 +78,7 @@ void ImageWidget::set_disable_zoom_image(bool flag)
 void ImageWidget::set_enable_image_fit_widget(bool flag)
 {
     is_fit_widget_size = flag;
+    reset_image();
     update();
 }
 
