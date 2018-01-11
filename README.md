@@ -9,8 +9,8 @@ There are two classes which can zoom in or zoom out images and crop the image.
 
 ## Screenshot: ##
 
-![](https://github.com/WangHongshuo/Readme_Images_Repository/blob/master/ImageWidget-Qt_1.jpg)        
-![](https://github.com/WangHongshuo/Readme_Images_Repository/blob/master/ImageWidget-Qt_2.jpg)        
+![](https://github.com/WangHongshuo/Readme_Images_Repository/blob/master/ImageWidget-Qt/ImageWidget-Qt_1.jpg)   
+![](https://github.com/WangHongshuo/Readme_Images_Repository/blob/master/ImageWidget-Qt/ImageWidget-Qt_2.jpg)   
 
 ## Change Log: ##
 
