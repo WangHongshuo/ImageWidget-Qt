@@ -70,16 +70,19 @@ void ImageWidget::setOnlyShowImage(bool flag)
 void ImageWidget::setEnableDragImage(bool flag)
 {
     isEnableDragImage = flag;
+    mActionEnableDrag->setChecked(isEnableDragImage);
 }
 
 void ImageWidget::setEnableZoomImage(bool flag)
 {
     isEnableZoomImage = flag;
+    mActionEnableZoom->setChecked(isEnableZoomImage);
 }
 
 void ImageWidget::setEnableImageFitWidget(bool flag)
 {
     isEnableFitWidget = flag;
+    mActionImageFitWidget->setChecked(isEnableFitWidget);
     resetImageWidget();
     update();
 }

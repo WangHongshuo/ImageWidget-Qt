@@ -75,9 +75,9 @@ private:
     bool isOnlyShowImage = false;
     bool isImageCloned = false;
 
-    bool isEnableFitWidget = true;
     bool isEnableDragImage = true;
     bool isEnableZoomImage = true;
+    bool isEnableFitWidget = true;
 
     int mouseStatus = MOUSE_NO;
 
