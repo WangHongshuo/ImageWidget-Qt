@@ -29,23 +29,39 @@ void ImageWidget::setImageWithData(QImage img, bool resetImageWhenLoaded)
         qImageContainer = new QImage;
         isImageCloned = true;
     }
-    *qImageContainer = img.copy();
-//    qDebug() << qImageContainer->bits() << img.bits();
-    isLoadImage = true;
-    if(resetImageWhenLoaded)
-        setDefaultParameters();
-    mouseStatus = MOUSE_NO;
-    update();
+    if(img.isNull())
+    {
+        isLoadImage = false;
+        return;
+    }
+    else
+    {
+        *qImageContainer = img.copy();
+//        qDebug() << qImageContainer->bits() << img.bits();
+        isLoadImage = true;
+        if(resetImageWhenLoaded)
+            setDefaultParameters();
+        mouseStatus = MOUSE_NO;
+        update();
+    }
 }
 
 void ImageWidget::setImageWithPointer(QImage *img, bool resetImageWhenLoaded)
 {
-    qImageContainer = img;
-    isLoadImage = true;
-    if(resetImageWhenLoaded)
-        setDefaultParameters();
-    mouseStatus = MOUSE_NO;
-    update();
+    if(img->isNull())
+    {
+        isLoadImage = false;
+        return;
+    }
+    else
+    {
+        qImageContainer = img;
+        isLoadImage = true;
+        if(resetImageWhenLoaded)
+            setDefaultParameters();
+        mouseStatus = MOUSE_NO;
+        update();
+    }
 }
 
 void ImageWidget::clear()
