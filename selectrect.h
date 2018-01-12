@@ -12,15 +12,15 @@
 #include "ImageWidget.h"
 
 
-typedef struct rect_info
+typedef struct rectInfo
 {
     int x = 0;
     int y = 0;
     int w = 0;
     int h = 0;
 
-}rect_info;
-Q_DECLARE_METATYPE(rect_info)
+}rectInfo;
+Q_DECLARE_METATYPE(rectInfo)
 
 class SelectRect : public QWidget
 {
@@ -52,7 +52,7 @@ private slots:
     void receiveParentSizeChangedValue(int width, int height);
     void selectExit();
     void selectReset();
-    void cropImage();
+    void crop();
 
 private:
 
@@ -61,14 +61,16 @@ private:
     void mouseMoveEvent(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);
     void contextMenuEvent(QContextMenuEvent *event);
-    void fixRectInfoInImage();
+    void cropImage(rectInfo rect);
+    rectInfo fixRectInfoInImage(rectInfo rect);
 
     QMenu* subMenu;
     QAction* subActionReset;
     QAction* subActionSave;
     QAction* subActionSendRect;
     QAction* subActionExit;
-    rect_info rect;
+    rectInfo selectedRectInfo;
+    rectInfo fixedRectInfoInImage;
     int mouseLeftClickedPosX;
     int mouseLeftClickedPosY;
     int mouseStatus;

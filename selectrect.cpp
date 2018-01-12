@@ -13,7 +13,7 @@ SelectRect::SelectRect(QWidget *parent) : QWidget(parent)
     subActionSave = subMenu->addAction(tr("另存为"));
     subActionExit = subMenu->addAction(tr("退出"));
     connect(subActionExit,SIGNAL(triggered()),this,SLOT(selectExit()));
-    connect(subActionSave,SIGNAL(triggered()),this,SLOT(cropImage()));
+    connect(subActionSave,SIGNAL(triggered()),this,SLOT(crop()));
     connect(subActionReset,SIGNAL(triggered()),this,SLOT(selectReset()));
     // 关闭后释放资源
     this->setAttribute(Qt::WA_DeleteOnClose);
@@ -36,7 +36,7 @@ void SelectRect::paintEvent(QPaintEvent *event)
     // 椭圆
 //    QRect boundingRectangle(rect.x,rect.y,rect.w,rect.h);
 //    select_area.addEllipse(boundingRectangle);
-    select_area.addRect(rect.x,rect.y,rect.w,rect.h);
+    select_area.addRect(selectedRectInfo.x,selectedRectInfo.y,selectedRectInfo.w,selectedRectInfo.h);
     mask.addRect(this->geometry());
     QPainterPath drawMask =mask.subtracted(select_area);
 
@@ -72,8 +72,8 @@ void SelectRect::mouseMoveEvent(QMouseEvent *event)
     if (mouseStatus == MOUSE_LEFT )
     {
         // 限定在mask内
-        rect.x = mouseLeftClickedPosX;
-        rect.y = mouseLeftClickedPosY;
+        selectedRectInfo.x = mouseLeftClickedPosX;
+        selectedRectInfo.y = mouseLeftClickedPosY;
         int x = event->x();
         int y = event->y();
         if(x < 0)
@@ -84,8 +84,8 @@ void SelectRect::mouseMoveEvent(QMouseEvent *event)
             y = 0;
         else if (y > this->height())
             y = this->height();
-        rect.w = x - rect.x;
-        rect.h = y - rect.y;
+        selectedRectInfo.w = x - selectedRectInfo.x;
+        selectedRectInfo.h = y - selectedRectInfo.y;
 
     }
     update();
@@ -93,12 +93,53 @@ void SelectRect::mouseMoveEvent(QMouseEvent *event)
 
 void SelectRect::mouseReleaseEvent(QMouseEvent *event)
 {
-
+    fixedRectInfoInImage = fixRectInfoInImage(selectedRectInfo);
 }
 
 void SelectRect::contextMenuEvent(QContextMenuEvent *event)
 {
     subMenu->exec(QCursor::pos());
+}
+
+rectInfo SelectRect::fixRectInfoInImage(rectInfo rect)
+{
+    rectInfo data;
+    rectInfo returnRectInfo;
+    data = rect;
+    // 修正矩形坐标
+    if(data.w < 0)
+    {
+        data.x += data.w;
+        data.w = -data.w;
+    }
+    if(data.h < 0)
+    {
+        data.y += data.h;
+        data.h = -data.h;
+    }
+    //        qDebug() << data.x << data.y << data.w << data.h;
+    // 计算相对于图像内的坐标
+    returnRectInfo.x = data.x - drawImageTopLeftPosX;
+    returnRectInfo.y = data.y - drawImageTopLeftPosY;
+    returnRectInfo.w = data.w;
+    returnRectInfo.h = data.h;
+    // 限定截取范围在图像内
+    // 修正顶点
+    if(returnRectInfo.x < 0)
+    {
+        returnRectInfo.w = data.w + returnRectInfo.x;
+        returnRectInfo.x = 0;
+    }
+    if (returnRectInfo.y < 0)
+    {
+        returnRectInfo.h = data.h + returnRectInfo.y;
+        returnRectInfo.y = 0;
+    }
+    if(returnRectInfo.x + data.w > image->width())
+        returnRectInfo.w = image->width() - returnRectInfo.x;
+    if(returnRectInfo.y + data.h > image->height())
+        returnRectInfo.h = image->height() - returnRectInfo.y;
+    return returnRectInfo;
 }
 
 void SelectRect::selectExit()
@@ -109,74 +150,34 @@ void SelectRect::selectExit()
 
 void SelectRect::selectReset()
 {
-    rect.w = 0;
-    rect.h = 0;
+    selectedRectInfo.w = 0;
+    selectedRectInfo.h = 0;
     update();
 }
 
-void SelectRect::cropImage()
+void SelectRect::crop()
+{
+    cropImage(fixedRectInfoInImage);
+}
+
+void SelectRect::cropImage(rectInfo rect)
 {
     // 接受到截取框信息
     if(isImageLoad)
     {
-        rect_info data;
-        data = rect;
-        // 修正矩形坐标
-        if(data.w < 0)
+        if(rect.w > 0 && rect.h > 0)
         {
-            data.x += data.w;
-            data.w = -data.w;
-        }
-        if(data.h < 0)
-        {
-            data.y += data.h;
-            data.h = -data.h;
-        }
-//        qDebug() << data.x << data.y << data.w << data.h;
-        if(data.w == 0 && data.h == 0)
-        {
-            QMessageBox msgBox(QMessageBox::Critical,tr("错误"),tr("未选取区域！"));
-            msgBox.exec();
+            QImage saveImageTemp = image->copy(rect.x,rect.y,rect.w,rect.h);
+            QString filename = QFileDialog::getSaveFileName(this, tr("Save File"),
+                                                            QCoreApplication::applicationDirPath(),
+                                                            tr("Images (*.png *.xpm *.jpg *.tiff *.bmp)"));
+            if(!filename.isEmpty() || !filename.isNull())
+                saveImageTemp.save(filename);
         }
         else
         {
-            // 计算相对于图像内的坐标
-            int x,y,w,h;
-            x = data.x - drawImageTopLeftPosX;
-            y = data.y - drawImageTopLeftPosY;
-            w = data.w;
-            h = data.h;
-            // 限定截取范围在图像内
-            // 修正顶点
-            if(x < 0)
-            {
-                w = data.w + x;
-                x = 0;
-            }
-            if (y < 0)
-            {
-                h = data.h + y;
-                y = 0;
-            }
-            if(x + data.w > image->width())
-                w = image->width() - x;
-            if(y + data.h > image->height())
-                h = image->height() - y;
-//            qDebug() << x << y << w << h;
-            if(w > 0 && h > 0)
-            {
-                QImage saveImageTemp = image->copy(x,y,w,h);
-                QString filename = QFileDialog::getSaveFileName(this, tr("Save File"),
-                                                                QCoreApplication::applicationDirPath(),
-                                                                tr("Images (*.png *.xpm *.jpg *.tiff *.bmp)"));
-                if(!filename.isEmpty() || !filename.isNull())
-                    saveImageTemp.save(filename);
-            }
-            else
-            {
-                QMessageBox msgBox(QMessageBox::Critical,tr("错误"),tr("未选中图像！"));
-                msgBox.exec();
-            }
+            QMessageBox msgBox(QMessageBox::Critical,tr("错误"),tr("未选中图像！"));
+            msgBox.exec();
         }
     }
     else
