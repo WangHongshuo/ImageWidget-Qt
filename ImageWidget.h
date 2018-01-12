@@ -27,6 +27,7 @@ public:
 signals:
     void parentWidgetSizeChanged(int width, int height);
     void sendLeftClickedPos(int x, int y);
+    void sendLeftClickedPosInImage(int x, int y);
 
 public slots:
     void clear();
@@ -34,6 +35,9 @@ public slots:
     void setEnableDragImage(bool flag = true);
     void setEnableZoomImage(bool flag = true);
     void setEnableImageFitWidget(bool flag = true);
+    // 发送点击位置坐标信号默认关闭，使用前需要开启
+    void setEnableSendLeftClickedPos(bool flag = false);
+    void setEnableSendLeftClickedPosInImage(bool flag = false);
 
 private slots:
     void resetImageWidget();
@@ -47,6 +51,7 @@ private:
     void imageZoomIn();
     void getDrawImageTopLeftPos(int x,int y);
     void initializeContextmenu();
+    void emitLeftClickedSignals(QMouseEvent *e);
 
     void wheelEvent(QWheelEvent *e);
     void mouseMoveEvent(QMouseEvent * e);
@@ -78,6 +83,9 @@ private:
     bool isEnableDragImage = true;
     bool isEnableZoomImage = true;
     bool isEnableFitWidget = true;
+
+    bool isEnableSendLeftClickedPos = false;
+    bool isEnableSendLeftClickedPosInImage = false;
 
     int mouseStatus = MOUSE_NO;
 

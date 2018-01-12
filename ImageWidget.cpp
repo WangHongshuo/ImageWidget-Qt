@@ -87,6 +87,16 @@ void ImageWidget::setEnableImageFitWidget(bool flag)
     update();
 }
 
+void ImageWidget::setEnableSendLeftClickedPos(bool flag)
+{
+    isEnableSendLeftClickedPos = flag;
+}
+
+void ImageWidget::setEnableSendLeftClickedPosInImage(bool flag)
+{
+    isEnableSendLeftClickedPosInImage = flag;
+}
+
 
 void ImageWidget::wheelEvent(QWheelEvent *e)
 {
@@ -107,8 +117,6 @@ void ImageWidget::wheelEvent(QWheelEvent *e)
 
 void ImageWidget::mousePressEvent(QMouseEvent *e)
 {
-    if(e->button() == Qt::LeftButton)
-        emit sendLeftClickedPos(e->x(),e->y());
     if(isLoadImage && !isOnlyShowImage)
     {
         switch(e->button())
@@ -128,6 +136,9 @@ void ImageWidget::mousePressEvent(QMouseEvent *e)
             mouseStatus = MOUSE_NO;
         }
     }
+    if(e->button() == Qt::LeftButton)
+        emitLeftClickedSignals(e);
+
 }
 
 void ImageWidget::mouseReleaseEvent(QMouseEvent *e)
@@ -263,6 +274,41 @@ void ImageWidget::initializeContextmenu()
     connect(mActionEnableDrag,SIGNAL(toggled(bool)),this,SLOT(setEnableDragImage(bool)));
     connect(mActionEnableZoom,SIGNAL(toggled(bool)),this,SLOT(setEnableZoomImage(bool)));
     connect(mActionImageFitWidget,SIGNAL(toggled(bool)),this,SLOT(setEnableImageFitWidget(bool)));
+}
+
+void ImageWidget::emitLeftClickedSignals(QMouseEvent *e)
+{
+    if(isEnableSendLeftClickedPos)
+        emit sendLeftClickedPos(e->x(),e->y());
+
+    if(isEnableSendLeftClickedPosInImage)
+    {
+        if(!isLoadImage)
+            emit sendLeftClickedPosInImage(-1,-1);
+        else
+        {
+            int leftClickedPosXInZoomedImage = e->x()-drawImageTopLeftPosX;
+            int leftClickedPosYInZoomedImage = e->y()-drawImageTopLeftPosY;
+            // 点不在图像上
+            if(leftClickedPosXInZoomedImage < 0 ||
+                    leftClickedPosYInZoomedImage < 0 ||
+                    leftClickedPosXInZoomedImage > qImageZoomedImage->width() ||
+                    leftClickedPosYInZoomedImage > qImageZoomedImage->height())
+            {
+                emit sendLeftClickedPosInImage(-1,-1);
+                return;
+            }
+            // 点在图像上，根据缩放计算出点在原图上的位置
+            else
+            {
+                double xDivZoomedImageW = double(leftClickedPosXInZoomedImage)/double(qImageZoomedImage->width());
+                double yDivZoomedImageH = double(leftClickedPosYInZoomedImage)/double(qImageZoomedImage->height());
+                int posXInImage = int(double(qImageContainer->width())*xDivZoomedImageW);
+                int posYInImage = int(double(qImageContainer->height())*yDivZoomedImageH);
+                emit sendLeftClickedPosInImage(posXInImage,posYInImage);
+            }
+        }
+    }
 }
 
 void ImageWidget::save()
