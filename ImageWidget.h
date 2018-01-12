@@ -11,7 +11,7 @@
 #include <QDebug>
 #include "selectrect.h"
 
-enum MouseDown{Left,Mid,Right,No};
+enum MouseDown{MOUSE_NO,MOUSE_LEFT,MOUSE_MID,MOUSE_RIGHT};
 
 class ImageWidget :
 	public QWidget
@@ -21,31 +21,33 @@ public:
     ImageWidget(QWidget *parent);
 	~ImageWidget();
 
-    void set_image_with_data(QImage img, bool always_initialization = false);
-    void set_image_with_pointer(QImage* img, bool always_initialization = false);
-    void clear();
-    void only_show_image(bool flag = false);
+    void setImageWithData(QImage img, bool resetImageWhenLoaded = false);
+    void setImageWithPointer(QImage* img, bool resetImageWhenLoaded = false);
 
 signals:
-    void parent_widget_size_changed(int width, int height);
+    void parentWidgetSizeChanged(int width, int height);
+    void sendLeftClickedPos(int x, int y);
 
 public slots:
-    void set_disable_drag_image(bool flag = false);
-    void set_disable_zoom_image(bool flag = false);
-    void set_enable_image_fit_widget(bool flag = true);
+    void clear();
+    void setOnlyShowImage(bool flag = false);
+    void setEnableDragImage(bool flag = true);
+    void setEnableZoomImage(bool flag = true);
+    void setEnableImageFitWidget(bool flag = true);
+
 private slots:
-    void reset_image();
+    void resetImageWidget();
     void save();
     void select();
-    void is_select_mode_exit();
+    void selectModeExit();
 
 private:
-    void set_default_parameters();
-    void zoom_out();
-    void zoom_in();
-    void translate(int x,int y);
+    void setDefaultParameters();
+    void imageZoomOut();
+    void imageZoomIn();
+    void getDrawImageTopLeftPos(int x,int y);
+    void initializeContextmenu();
 
-    void create_contextmenu();
     void wheelEvent(QWheelEvent *e);
     void mouseMoveEvent(QMouseEvent * e);
     void mousePressEvent(QMouseEvent * e);
@@ -54,32 +56,36 @@ private:
     void contextMenuEvent(QContextMenuEvent *e);
     void resizeEvent(QResizeEvent *event);
 
-    QImage *mp_img = NULL;
-    double scalex;
-    double scaley;
-	int xtranslate;
-	int ytranslate;
-    int last_x_pos = 0;
-    int last_y_pos = 0;
+    QImage *qImageContainer = NULL;
+    QImage *qImageZoomedImage = NULL;
 
-	int mousePosX;
-	int mousePosY;
-    bool is_image_load = false;
-    bool is_select_mode = false;
-    bool is_only_show_image = false;
-    bool is_image_cloned = false;
-    bool is_fit_widget_size = true;
-    bool is_disable_drag_image = false;
-    bool is_disable_zoom_image = false;
+    double zoomScaleX = 1.0;
+    double zoomScaleY = 1.0;
 
-	MouseDown mouse;
-	
+    int mouseLeftClickedPosX;
+    int mouseLeftClickedPosY;
+
+    int drawImageTopLeftLastPosX = 0;
+    int drawImageTopLeftLastPosY = 0;
+    int drawImageTopLeftPosX = 0;
+    int drawImageTopLeftPosY = 0;
+    // status flags
+    bool isLoadImage = false;
+    bool isSelectMode = false;
+    bool isOnlyShowImage = false;
+    bool isImageCloned = false;
+
+    bool isEnableFitWidget = true;
+    bool isEnableDragImage = true;
+    bool isEnableZoomImage = true;
+
+    int mouseStatus = MOUSE_NO;
+
+    QMenu* mMenu = NULL;
     QAction *mActionResetPos = NULL;
     QAction *mActionSave = NULL;
     QAction *mActionSelect = NULL;
-    QAction *mActionDisableDrag = NULL;
-    QAction *mActionDisableZoom = NULL;
-    QAction *mActionImageFitWidget = NULL;
-
-    QMenu* mMenu = NULL;
+    QAction *mActionEnableDrag = NULL;
+    QAction *mActionEnableZoom = NULL;
+    QAction *mActionImageFitWidget = NULL; 
 };

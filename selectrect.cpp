@@ -1,20 +1,20 @@
 ﻿#include "selectrect.h"
 #include <iostream>
 #include <QDebug>
+#include <QCoreApplication>
 
 SelectRect::SelectRect(QWidget *parent) : QWidget(parent)
 {
-    image = new QImage;
-    is_image_load = false;
+    isImageLoad = false;
 
     // 初始化右键菜单
     subMenu = new QMenu();
     subActionReset = subMenu->addAction(tr("重选"));
     subActionSave = subMenu->addAction(tr("另存为"));
     subActionExit = subMenu->addAction(tr("退出"));
-    connect(subActionExit,SIGNAL(triggered()),this,SLOT(select_exit()));
-    connect(subActionSave,SIGNAL(triggered()),this,SLOT(cut_img()));
-    connect(subActionReset,SIGNAL(triggered()),this,SLOT(select_reset()));
+    connect(subActionExit,SIGNAL(triggered()),this,SLOT(selectExit()));
+    connect(subActionSave,SIGNAL(triggered()),this,SLOT(cropImage()));
+    connect(subActionReset,SIGNAL(triggered()),this,SLOT(selectReset()));
     // 关闭后释放资源
     this->setAttribute(Qt::WA_DeleteOnClose);
 }
@@ -23,7 +23,7 @@ SelectRect::~SelectRect()
 {
 //    disconnect(this->parent(),SIGNAL(parent_widget_size_changed(int,int)),this,SLOT(receive_parent_size_changed_value(int,int)));
 //    disconnect(this,SIGNAL(select_mode_exit()),this->parent(),SLOT(is_select_mode_exit()));
-    delete image;
+    image = NULL;
     delete subMenu;
 }
 
@@ -51,29 +51,29 @@ void SelectRect::mousePressEvent(QMouseEvent *event)
         switch(event->button())
         {
         case Qt::LeftButton:
-            mouse = Left;
-            first_mouse_pos_x = event->x();
-            first_mouse_pos_y = event->y();
+            mouseStatus = MOUSE_LEFT;
+            mouseLeftClickedPosX = event->x();
+            mouseLeftClickedPosY = event->y();
 //            qDebug() << first_mousePosX << first_mousePosX;
             break;
         case Qt::RightButton:
-            mouse = Right;
+            mouseStatus = MOUSE_RIGHT;
             break;
         case Qt::MiddleButton:
-            mouse = Mid;
+            mouseStatus = MOUSE_MID;
             break;
         default:
-            mouse = No;
+            mouseStatus = MOUSE_NO;
     }
 }
 
 void SelectRect::mouseMoveEvent(QMouseEvent *event)
 {
-    if (mouse == Left )
+    if (mouseStatus == MOUSE_LEFT )
     {
         // 限定在mask内
-        rect.x = first_mouse_pos_x;
-        rect.y = first_mouse_pos_y;
+        rect.x = mouseLeftClickedPosX;
+        rect.y = mouseLeftClickedPosY;
         int x = event->x();
         int y = event->y();
         if(x < 0)
@@ -91,28 +91,33 @@ void SelectRect::mouseMoveEvent(QMouseEvent *event)
     update();
 }
 
+void SelectRect::mouseReleaseEvent(QMouseEvent *event)
+{
+
+}
+
 void SelectRect::contextMenuEvent(QContextMenuEvent *event)
 {
     subMenu->exec(QCursor::pos());
 }
 
-void SelectRect::select_exit()
+void SelectRect::selectExit()
 {
-    emit select_mode_exit();
+    emit sendSelectModeExit();
     this->close();
 }
 
-void SelectRect::select_reset()
+void SelectRect::selectReset()
 {
     rect.w = 0;
     rect.h = 0;
     update();
 }
 
-void SelectRect::cut_img()
+void SelectRect::cropImage()
 {
     // 接受到截取框信息
-    if(is_image_load)
+    if(isImageLoad)
     {
         rect_info data;
         data = rect;
@@ -135,18 +140,10 @@ void SelectRect::cut_img()
         }
         else
         {
-            QImage* temp = new QImage;
-            QImage* save_img = new QImage;
-            *temp = image->copy();
-            //        qDebug()<< temp << &mp_img;
-            //        qDebug() << temp->size();
-            //        qDebug() << this->width() * scalex << this->height() * scalex;
-            *temp = temp->scaled(this->width() * scalex,this->height() * scalex,Qt::KeepAspectRatio);
-            //        qDebug() << temp->size();
             // 计算相对于图像内的坐标
             int x,y,w,h;
-            x = data.x - xtranslate;
-            y = data.y - ytranslate;
+            x = data.x - drawImageTopLeftPosX;
+            y = data.y - drawImageTopLeftPosY;
             w = data.w;
             h = data.h;
             // 限定截取范围在图像内
@@ -161,27 +158,25 @@ void SelectRect::cut_img()
                 h = data.h + y;
                 y = 0;
             }
-            if(x + data.w > temp->width())
-                w = temp->width() - x;
-            if(y + data.h > temp->height())
-                h = temp->height() - y;
-//            qDebug() << xtranslate << ytranslate << temp->width() << temp->height();
+            if(x + data.w > image->width())
+                w = image->width() - x;
+            if(y + data.h > image->height())
+                h = image->height() - y;
 //            qDebug() << x << y << w << h;
             if(w > 0 && h > 0)
             {
-                *save_img = temp->copy(x,y,w,h);
+                QImage saveImageTemp = image->copy(x,y,w,h);
                 QString filename = QFileDialog::getSaveFileName(this, tr("Save File"),
-                                                                "C:/",
+                                                                QCoreApplication::applicationDirPath(),
                                                                 tr("Images (*.png *.xpm *.jpg *.tiff *.bmp)"));
-                save_img->save(filename);
+                if(!filename.isEmpty() || !filename.isNull())
+                    saveImageTemp.save(filename);
             }
             else
             {
                 QMessageBox msgBox(QMessageBox::Critical,tr("错误"),tr("未选中图像！"));
                 msgBox.exec();
             }
-            delete temp;
-            delete save_img;
         }
     }
     else
@@ -191,12 +186,8 @@ void SelectRect::cut_img()
     }
 }
 
-void SelectRect::get_rect_info()
-{
-    cut_img();
-}
-
-void SelectRect::receive_parent_size_changed_value(int width, int height)
+void SelectRect::receiveParentSizeChangedValue(int width, int height)
 {
     this->setGeometry(0,0,width,height);
+    update();
 }

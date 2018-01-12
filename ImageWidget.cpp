@@ -1,159 +1,166 @@
 ﻿#include "ImageWidget.h"
 #include <iostream>
 #include <QDebug>
+#include <QCoreApplication>
 #include "selectrect.h"
 
-ImageWidget::ImageWidget(QWidget *parent):QWidget(parent),scalex(1),scaley(1),xtranslate(0),ytranslate(0),mouse(No)
+ImageWidget::ImageWidget(QWidget *parent):QWidget(parent)
 {
-    is_image_load = false;
-    is_select_mode = false;
-    create_contextmenu();
+    isLoadImage = false;
+    isSelectMode = false;
+    qImageZoomedImage = new QImage;
+    initializeContextmenu();
 }
 
 ImageWidget::~ImageWidget()
 {
-    if(is_image_load)
-        mp_img = NULL;
-    if(is_image_cloned)
-        delete mp_img;
+    if(isLoadImage)
+        qImageContainer = NULL;
+    if(isImageCloned)
+        delete qImageContainer;
     delete  mMenu;
+    delete qImageZoomedImage;
 }
 
-void ImageWidget::set_image_with_data(QImage img, bool always_initialization)
+void ImageWidget::setImageWithData(QImage img, bool resetImageWhenLoaded)
 {
-    if(!is_image_cloned)
+    if(!isImageCloned)
     {
-        mp_img = new QImage;
-        is_image_cloned = true;
+        qImageContainer = new QImage;
+        isImageCloned = true;
     }
-    *mp_img = img.copy(0,0,img.width(),img.height());
-    //    qDebug() << mp_img->data_ptr() << img.data_ptr();
-    is_image_load = true;
-    if(always_initialization)
-        set_default_parameters();
-    mouse = No;
+    *qImageContainer = img.copy();
+//    qDebug() << qImageContainer->bits() << img.bits();
+    isLoadImage = true;
+    if(resetImageWhenLoaded)
+        setDefaultParameters();
+    mouseStatus = MOUSE_NO;
     update();
 }
 
-void ImageWidget::set_image_with_pointer(QImage *img, bool always_initialization)
+void ImageWidget::setImageWithPointer(QImage *img, bool resetImageWhenLoaded)
 {
-    mp_img = img;
-    is_image_load = true;
-    if(always_initialization)
-        set_default_parameters();
-    mouse = No;
+    qImageContainer = img;
+    isLoadImage = true;
+    if(resetImageWhenLoaded)
+        setDefaultParameters();
+    mouseStatus = MOUSE_NO;
     update();
 }
 
 void ImageWidget::clear()
 {
-    if(is_image_load)
+    if(isLoadImage)
     {
-        is_image_load = false;
-
-        if(is_image_cloned)
-            delete mp_img;
+        isLoadImage = false;
+        if(isImageCloned)
+            delete qImageContainer;
         else
-            mp_img = NULL;
+            qImageContainer = NULL;
         update();
     }
 }
 
 
-void ImageWidget::only_show_image(bool flag)
+void ImageWidget::setOnlyShowImage(bool flag)
 {
-    is_only_show_image = flag;
+    isOnlyShowImage = flag;
 }
 
-void ImageWidget::set_disable_drag_image(bool flag)
+void ImageWidget::setEnableDragImage(bool flag)
 {
-    is_disable_drag_image = flag;
+    isEnableDragImage = flag;
 }
 
-void ImageWidget::set_disable_zoom_image(bool flag)
+void ImageWidget::setEnableZoomImage(bool flag)
 {
-    is_disable_zoom_image = flag;
+    isEnableZoomImage = flag;
 }
 
-void ImageWidget::set_enable_image_fit_widget(bool flag)
+void ImageWidget::setEnableImageFitWidget(bool flag)
 {
-    is_fit_widget_size = flag;
-    reset_image();
+    isEnableFitWidget = flag;
+    resetImageWidget();
     update();
 }
 
 
 void ImageWidget::wheelEvent(QWheelEvent *e)
 {
-    if(is_image_load && !is_select_mode && !is_only_show_image && !is_disable_zoom_image)
+    if(isLoadImage && !isSelectMode && !isOnlyShowImage && isEnableZoomImage)
     {
         int numDegrees = e->delta();
         if(numDegrees > 0)
         {
-            zoom_out();
+            imageZoomOut();
         }
         if(numDegrees < 0)
         {
-            zoom_in();
+            imageZoomIn();
         }
         update();
     }
 }
+
 void ImageWidget::mousePressEvent(QMouseEvent *e)
 {
-    if(is_image_load && !is_only_show_image)
+    if(e->button() == Qt::LeftButton)
+        emit sendLeftClickedPos(e->x(),e->y());
+    if(isLoadImage && !isOnlyShowImage)
     {
         switch(e->button())
         {
         case Qt::LeftButton:
-            mouse = Left;
+            mouseStatus = MOUSE_LEFT;
+            mouseLeftClickedPosX = e->x();
+            mouseLeftClickedPosY = e->y();
             break;
         case Qt::RightButton:
-            mouse = Right;
+            mouseStatus = MOUSE_RIGHT;
             break;
         case Qt::MiddleButton:
-            mouse = Mid;
+            mouseStatus = MOUSE_MID;
             break;
         default:
-            mouse = No;
+            mouseStatus = MOUSE_NO;
         }
-        //        qDebug() << mouse;
-        //初次按键事件鼠标坐标
-        mousePosX = e->x();
-        mousePosY = e->y();
     }
 }
 
 void ImageWidget::mouseReleaseEvent(QMouseEvent *e)
 {
-    if(mouse == Left)
+    if(isLoadImage && !isOnlyShowImage && isEnableDragImage)
     {
-        last_x_pos = xtranslate;
-        last_y_pos = ytranslate;
+        if(mouseStatus == MOUSE_LEFT)
+        {
+            // 记录上次图像顶点
+            drawImageTopLeftLastPosX = drawImageTopLeftPosX;
+            drawImageTopLeftLastPosY = drawImageTopLeftPosY;
+        }
     }
 }
 
 
 void ImageWidget::mouseMoveEvent(QMouseEvent *e)
 {
-    if(mouse == Left )
+    if(isLoadImage && !isOnlyShowImage && isEnableDragImage)
     {
-        //xtranslate = e->x() - mousePosX;
-        //ytranslate = e->y() - mousePosY;
-
-        //        qDebug() << "e.mouseposX: " << mousePosX << "e.mouseposY: " << mousePosY;
-        //        qDebug() << "e.x: " << e->x() << "e.y: " << e->y();
-        //相对移动坐标
-        translate(e->x() - mousePosX,e->y() - mousePosY);
+        if(mouseStatus == MOUSE_LEFT )
+        {
+            // e->x()和e->y()为当前鼠标坐标 转换为相对移动距离
+            //        qDebug() << e->x() << e->y();
+            getDrawImageTopLeftPos(e->x()-mouseLeftClickedPosX,
+                                   e->y()-mouseLeftClickedPosY);
+        }
     }
 }
 
-void ImageWidget::translate(int x,int y)
+void ImageWidget::getDrawImageTopLeftPos(int x,int y)
 {
-    if(!is_disable_drag_image)
+    if(isEnableDragImage)
     {
-        xtranslate = last_x_pos + x;
-        ytranslate = last_y_pos + y;
+        drawImageTopLeftPosX = drawImageTopLeftLastPosX+x;
+        drawImageTopLeftPosY = drawImageTopLeftLastPosY+y;
         update();
     }
 }
@@ -163,126 +170,119 @@ void ImageWidget::paintEvent(QPaintEvent *e)
     QPainter painter(this);
     painter.setBrush(QBrush(QColor(200,200,200)));
     painter.drawRect(0,0,this->width(),this->height());
-    if(!is_image_load)
+    if(!isLoadImage)
         return;
-    if(is_fit_widget_size)
-        painter.drawImage(QPoint(xtranslate,ytranslate),mp_img->scaled(this->width()*scalex,this->height()*scaley,Qt::KeepAspectRatio));
+    if(isEnableFitWidget)
+        *qImageZoomedImage = qImageContainer->scaled(this->width()*zoomScaleX,this->height()*zoomScaleY,Qt::KeepAspectRatio);
     else
-        painter.drawImage(QPoint(xtranslate,ytranslate),mp_img->scaled(mp_img->width()*scalex,mp_img->height()*scaley,Qt::KeepAspectRatio));
-    //    qDebug() << scalex;
+        *qImageZoomedImage = qImageContainer->scaled(qImageContainer->width()*zoomScaleX,qImageContainer->height()*zoomScaleY,Qt::KeepAspectRatio);
+    painter.drawImage(QPoint(drawImageTopLeftPosX,drawImageTopLeftPosY),*qImageZoomedImage);
+    //    qDebug() << zoomScaleX;
 }
 
 void ImageWidget::contextMenuEvent(QContextMenuEvent *e)
 {
-    if(!is_only_show_image)
+    if(!isOnlyShowImage)
     {
-        mActionDisableDrag->setChecked(is_disable_drag_image);
-        mActionDisableZoom->setChecked(is_disable_zoom_image);
-        mActionImageFitWidget->setChecked(is_fit_widget_size);
         mMenu->exec(QCursor::pos());
     }
-    //mousePosX = QCursor::pos().x();
-    //mousePosY = QCursor::pos().y();
 }
 
 void ImageWidget::resizeEvent(QResizeEvent *event)
 {
-    if(is_select_mode && is_image_load)
-        emit parent_widget_size_changed(this->width(),this->height());
+    if(isSelectMode && isLoadImage)
+        emit parentWidgetSizeChanged(this->width(),this->height());
 }
 
-void ImageWidget::reset_image()
+void ImageWidget::resetImageWidget()
 {
-    xtranslate = 0;
-    ytranslate = 0;
-    scalex = 1;
-    scaley = 1;
-    last_x_pos = 0;
-    last_y_pos = 0;
+    setDefaultParameters();
     update();
 }
 
-void ImageWidget::zoom_out()
+void ImageWidget::imageZoomOut()
 {
-    if(scalex<=12&&scaley<=12)
+    if(zoomScaleX <= 8 && zoomScaleY <= 8)
     {
-        scalex *= 1.1;
-        scaley *= 1.1;
+        zoomScaleX *= 1.1;
+        zoomScaleY *= 1.1;
     }
     update();
 }
 
-void ImageWidget::zoom_in()
+void ImageWidget::imageZoomIn()
 {
-    if(scalex>=0.05&&scaley>=0.05)
+    if(zoomScaleX >= 0.05 && zoomScaleY >= 0.05)
     {
-        scalex *= 1.0/1.1;
-        scaley *= 1.0/1.1;
+        zoomScaleX *= 1.0/1.1;
+        zoomScaleY *= 1.0/1.1;
     }
     update();
 }
 
 void ImageWidget::select()
 {
-    if(is_image_load)
+    if(isLoadImage)
     {
-        is_select_mode = true;
+        isSelectMode = true;
         SelectRect* m = new SelectRect(this);
         m->setGeometry(0,0,this->geometry().width(),this->geometry().height());
-        connect(m,SIGNAL(select_mode_exit()),this,SLOT(is_select_mode_exit()));
-        connect(this,SIGNAL(parent_widget_size_changed(int,int)),m,SLOT(receive_parent_size_changed_value(int,int)));
-        m->set_image(mp_img);
-        m->scalex = scalex;
-        m->scaley = scaley;
-        m->xtranslate = xtranslate;
-        m->ytranslate = ytranslate;
+        connect(m,SIGNAL(sendSelectModeExit()),this,SLOT(selectModeExit()));
+        connect(this,SIGNAL(parentWidgetSizeChanged(int,int)),
+                m,SLOT(receiveParentSizeChangedValue(int,int)));
+        m->setImage(qImageZoomedImage,drawImageTopLeftPosX,drawImageTopLeftPosY);
         m->show();
     }
 }
 
 
-void ImageWidget::create_contextmenu()
+void ImageWidget::initializeContextmenu()
 {
     mMenu = new QMenu();
     mActionResetPos = mMenu->addAction(tr("重置"));
     mActionSave = mMenu->addAction(tr("另存为"));
     mActionSelect = mMenu->addAction(tr("截取"));
-    mActionDisableDrag = mMenu->addAction(tr("禁用拖拽"));
-    mActionDisableZoom = mMenu->addAction(tr("禁用缩放"));
+    mActionEnableDrag = mMenu->addAction(tr("启用拖拽"));
+    mActionEnableZoom = mMenu->addAction(tr("启用缩放"));
     mActionImageFitWidget = mMenu->addAction(tr("自适应大小"));
 
-    mActionDisableDrag->setCheckable(true);
-    mActionDisableZoom->setCheckable(true);
+    mActionEnableDrag->setCheckable(true);
+    mActionEnableZoom->setCheckable(true);
     mActionImageFitWidget->setCheckable(true);
-    connect(mActionResetPos,SIGNAL(triggered()),this,SLOT(reset_image()));
+
+    mActionEnableDrag->setChecked(isEnableDragImage);
+    mActionEnableZoom->setChecked(isEnableZoomImage);
+    mActionImageFitWidget->setChecked(isEnableFitWidget);
+
+    connect(mActionResetPos,SIGNAL(triggered()),this,SLOT(resetImageWidget()));
     connect(mActionSave,SIGNAL(triggered()),this,SLOT(save()));
     connect(mActionSelect,SIGNAL(triggered()),this,SLOT(select()));
-    connect(mActionDisableDrag,SIGNAL(toggled(bool)),this,SLOT(set_disable_drag_image(bool)));
-    connect(mActionDisableZoom,SIGNAL(toggled(bool)),this,SLOT(set_disable_zoom_image(bool)));
-    connect(mActionImageFitWidget,SIGNAL(toggled(bool)),this,SLOT(set_enable_image_fit_widget(bool)));
+    connect(mActionEnableDrag,SIGNAL(toggled(bool)),this,SLOT(setEnableDragImage(bool)));
+    connect(mActionEnableZoom,SIGNAL(toggled(bool)),this,SLOT(setEnableZoomImage(bool)));
+    connect(mActionImageFitWidget,SIGNAL(toggled(bool)),this,SLOT(setEnableImageFitWidget(bool)));
 }
 
 void ImageWidget::save()
 {
-    if(is_image_load)
+    if(isLoadImage)
     {
-        QImage temp = mp_img->copy();
+        QImage temp = qImageContainer->copy();
         QString filename = QFileDialog::getSaveFileName(this, tr("Open File"),
-                                                        "C:/",
+                                                        QCoreApplication::applicationDirPath(),
                                                         tr("Images (*.png *.xpm *.jpg *.tiff *.bmp)"));
-         temp.save(filename);
+        if(!filename.isEmpty() || !filename.isNull())
+            temp.save(filename);
     }
 }
 
-void ImageWidget::is_select_mode_exit()
+void ImageWidget::selectModeExit()
 {
-    is_select_mode = false;
-    //    qDebug() << is_select_mode;
+    isSelectMode = false;
 }
 
-void ImageWidget::set_default_parameters()
+void ImageWidget::setDefaultParameters()
 {
-    scalex = scaley = 1.0;
-    xtranslate = ytranslate = 0;
-    last_x_pos = last_y_pos = 0;
+    zoomScaleX = zoomScaleY = 1.0;
+    drawImageTopLeftPosX = drawImageTopLeftLastPosX = 0;
+    drawImageTopLeftPosY = drawImageTopLeftLastPosY = 0;
 }

@@ -14,7 +14,13 @@ There are two classes which can zoom in or zoom out images and crop the image.
 
 ## Change Log: ##
 
-- 2018.1.9: 
+- 2018.01.12:
+
+Rewrote this class, renamed function names and variable names, removed some unnecessary variables.     
+
+重写了该类，重新规划了变量和函数名，以及减少了变量的数量。     
+
+- 2018.01.09: 
            
 Added more funciton in contextmenu, and this class will be a submodule.           
 

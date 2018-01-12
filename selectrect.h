@@ -18,6 +18,7 @@ typedef struct rect_info
     int y = 0;
     int w = 0;
     int h = 0;
+
 }rect_info;
 Q_DECLARE_METATYPE(rect_info)
 
@@ -28,40 +29,39 @@ public:
 
     SelectRect(QWidget *parent);
     ~SelectRect();
-    void set_image(QImage* img)
+    void setImage(QImage *img,int x,int y)
     {
-        *image = img->copy();
-        is_image_load = true;
+        image = img;
+        drawImageTopLeftPosX = x;
+        drawImageTopLeftPosY = y;
+        isImageLoad = true;
     }
 
-
-    double scalex;
-    double scaley;
-    int xtranslate;
-    int ytranslate;
+    int drawImageTopLeftPosX = -1;
+    int drawImageTopLeftPosY = -1;
 
 protected:
 
 
 signals:
-    void select_mode_exit();
+    void sendSelectModeExit();
 public slots:
 
 
 private slots:
-    void receive_parent_size_changed_value(int width, int height);
-    void select_exit();
-    void select_reset();
-    void cut_img();
-    void get_rect_info();
-
+    void receiveParentSizeChangedValue(int width, int height);
+    void selectExit();
+    void selectReset();
+    void cropImage();
 
 private:
 
     void paintEvent(QPaintEvent *event);
     void mousePressEvent(QMouseEvent *event);
     void mouseMoveEvent(QMouseEvent *event);
+    void mouseReleaseEvent(QMouseEvent *event);
     void contextMenuEvent(QContextMenuEvent *event);
+    void fixRectInfoInImage();
 
     QMenu* subMenu;
     QAction* subActionReset;
@@ -69,13 +69,11 @@ private:
     QAction* subActionSendRect;
     QAction* subActionExit;
     rect_info rect;
-    int first_mouse_pos_x;
-    int first_mouse_pos_y;
-    int mouse;
-    QImage* image;
-    bool is_image_load;
-    bool is_only_send_rect_info = false;
-
+    int mouseLeftClickedPosX;
+    int mouseLeftClickedPosY;
+    int mouseStatus;
+    QImage* image = NULL;
+    bool isImageLoad;
 };
 
 #endif // SELECTRECT_H
