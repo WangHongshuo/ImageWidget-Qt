@@ -41,7 +41,6 @@ void ImageWidget::setImageWithData(QImage img, bool resetImageWhenLoaded)
         isLoadImage = true;
         if(resetImageWhenLoaded)
             setDefaultParameters();
-        mouseStatus = MOUSE_NO;
         update();
     }
 }
@@ -59,7 +58,6 @@ void ImageWidget::setImageWithPointer(QImage *img, bool resetImageWhenLoaded)
         isLoadImage = true;
         if(resetImageWhenLoaded)
             setDefaultParameters();
-        mouseStatus = MOUSE_NO;
         update();
     }
 }
@@ -166,6 +164,8 @@ void ImageWidget::mouseReleaseEvent(QMouseEvent *e)
             // 记录上次图像顶点
             drawImageTopLeftLastPosX = drawImageTopLeftPosX;
             drawImageTopLeftLastPosY = drawImageTopLeftPosY;
+            // 释放后鼠标状态置No
+            mouseStatus = MOUSE_NO;
         }
     }
 }
@@ -215,6 +215,8 @@ void ImageWidget::contextMenuEvent(QContextMenuEvent *e)
     if(!isOnlyShowImage)
     {
         mMenu->exec(QCursor::pos());
+        // 右键菜单弹出后 鼠标状态置No
+        mouseStatus = MOUSE_NO;
     }
 }
 
