@@ -14,6 +14,12 @@ It's my first time to write a class and this class inherit from QWidget. It can 
 ![](https://github.com/WangHongshuo/Readme_Images_Repository/blob/master/ImageWidget-Qt/ImageWidget-Qt_2.gif)
 ## Change Log: ##
 
+- 2018.01.15:
+
+optimized `paintEvent`, `QImage::scaled` will not be called when dragging image.       
+
+优化`paintEvent`，在拖拽图片时不调用`QImage::scaled`。       
+
 - 2018.01.14:
 
 When your mouse clicked at the widget, it will return the point position in the widget or the image.

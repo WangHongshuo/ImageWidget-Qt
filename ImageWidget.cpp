@@ -1,4 +1,6 @@
-﻿#include "ImageWidget.h"
+// UTF-8 without BOM
+
+#include "ImageWidget.h"
 #include <iostream>
 #include <QDebug>
 #include <QCoreApplication>
@@ -41,7 +43,8 @@ void ImageWidget::setImageWithData(QImage img, bool resetImageWhenLoaded)
         isLoadImage = true;
         if(resetImageWhenLoaded)
             setDefaultParameters();
-        update();
+        *qImageZoomedImage = img.copy();
+        updateZoomedImage();
     }
 }
 
@@ -58,7 +61,8 @@ void ImageWidget::setImageWithPointer(QImage *img, bool resetImageWhenLoaded)
         isLoadImage = true;
         if(resetImageWhenLoaded)
             setDefaultParameters();
-        update();
+        *qImageZoomedImage = img->copy();
+        updateZoomedImage();
     }
 }
 
@@ -71,7 +75,7 @@ void ImageWidget::clear()
             delete qImageContainer;
         else
             qImageContainer = NULL;
-        update();
+        updateZoomedImage();
     }
 }
 
@@ -98,7 +102,7 @@ void ImageWidget::setEnableImageFitWidget(bool flag)
     isEnableFitWidget = flag;
     mActionImageFitWidget->setChecked(isEnableFitWidget);
     resetImageWidget();
-    update();
+    updateZoomedImage();
 }
 
 void ImageWidget::setEnableSendLeftClickedPos(bool flag)
@@ -125,7 +129,7 @@ void ImageWidget::wheelEvent(QWheelEvent *e)
         {
             imageZoomIn();
         }
-        update();
+        updateZoomedImage();
     }
 }
 
@@ -200,14 +204,8 @@ void ImageWidget::paintEvent(QPaintEvent *e)
     QPainter painter(this);
     painter.setBrush(QBrush(QColor(200,200,200)));
     painter.drawRect(0,0,this->width(),this->height());
-    if(!isLoadImage)
-        return;
-    if(isEnableFitWidget)
-        *qImageZoomedImage = qImageContainer->scaled(this->width()*zoomScaleX,this->height()*zoomScaleY,Qt::KeepAspectRatio);
-    else
-        *qImageZoomedImage = qImageContainer->scaled(qImageContainer->width()*zoomScaleX,qImageContainer->height()*zoomScaleY,Qt::KeepAspectRatio);
-    painter.drawImage(QPoint(drawImageTopLeftPosX,drawImageTopLeftPosY),*qImageZoomedImage);
-    //    qDebug() << zoomScaleX;
+    if(!qImageZoomedImage->isNull())
+        painter.drawImage(QPoint(drawImageTopLeftPosX,drawImageTopLeftPosY),*qImageZoomedImage);
 }
 
 void ImageWidget::contextMenuEvent(QContextMenuEvent *e)
@@ -229,7 +227,7 @@ void ImageWidget::resizeEvent(QResizeEvent *event)
 void ImageWidget::resetImageWidget()
 {
     setDefaultParameters();
-    update();
+    updateZoomedImage();
 }
 
 void ImageWidget::imageZoomOut()
@@ -239,7 +237,7 @@ void ImageWidget::imageZoomOut()
         zoomScaleX *= 1.1;
         zoomScaleY *= 1.1;
     }
-    update();
+    updateZoomedImage();
 }
 
 void ImageWidget::imageZoomIn()
@@ -249,7 +247,7 @@ void ImageWidget::imageZoomIn()
         zoomScaleX *= 1.0/1.1;
         zoomScaleY *= 1.0/1.1;
     }
-    update();
+    updateZoomedImage();
 }
 
 void ImageWidget::select()
@@ -345,6 +343,21 @@ void ImageWidget::save()
 void ImageWidget::selectModeExit()
 {
     isSelectMode = false;
+}
+
+void ImageWidget::updateZoomedImage()
+{
+    // 图像为空直接返回
+    if(!isLoadImage)
+        return;
+
+    // 减少拖动带来的scaled次数
+    if(isEnableFitWidget)
+        *qImageZoomedImage = qImageContainer->scaled(this->width()*zoomScaleX,this->height()*zoomScaleY,Qt::KeepAspectRatio);
+    else
+        *qImageZoomedImage = qImageContainer->scaled(qImageContainer->width()*zoomScaleX,qImageContainer->height()*zoomScaleY,Qt::KeepAspectRatio);
+    qDebug() << "call updateZoomedImage";
+    update();
 }
 
 void ImageWidget::setDefaultParameters()

@@ -1,4 +1,6 @@
-﻿#pragma once
+// UTF-8 without BOM
+
+#pragma once
 #include <QWidget>
 #include <QImage>
 #include <QPainter>
@@ -46,6 +48,7 @@ private slots:
     void selectModeExit();
 
 private:
+    void updateZoomedImage();
     void setDefaultParameters();
     void imageZoomOut();
     void imageZoomIn();
@@ -83,7 +86,6 @@ private:
     bool isEnableDragImage = true;
     bool isEnableZoomImage = true;
     bool isEnableFitWidget = true;
-
     bool isEnableSendLeftClickedPos = false;
     bool isEnableSendLeftClickedPosInImage = false;
 

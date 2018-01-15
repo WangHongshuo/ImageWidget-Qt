@@ -1,4 +1,6 @@
-﻿#ifndef SELECTRECT_H
+// UTF-8 without BOM
+
+#ifndef SELECTRECT_H
 #define SELECTRECT_H
 
 #include <QWidget>

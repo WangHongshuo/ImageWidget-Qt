@@ -1,4 +1,6 @@
-﻿#include "selectrect.h"
+// UTF-8 without BOM
+
+#include "selectrect.h"
 #include <iostream>
 #include <QDebug>
 #include <QCoreApplication>
