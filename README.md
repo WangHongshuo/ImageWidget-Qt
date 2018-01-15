@@ -16,9 +16,11 @@ It's my first time to write a class and this class inherit from QWidget. It can 
 
 - 2018.01.15:
 
-optimized `paintEvent`, `QImage::scaled` will not be called when dragging image.       
+Optimized `paintEvent`, `QImage::scaled` will not be called when dragging image.      
+Optimized zoom image funciton.     
 
-优化`paintEvent`，在拖拽图片时不调用`QImage::scaled`。       
+优化`paintEvent`，在拖拽图片时不调用`QImage::scaled`。     
+优化了缩放图片。       
 
 - 2018.01.14:
 

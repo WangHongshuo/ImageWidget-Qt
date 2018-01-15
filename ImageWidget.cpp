@@ -75,7 +75,7 @@ void ImageWidget::clear()
             delete qImageContainer;
         else
             qImageContainer = NULL;
-        updateZoomedImage();
+        resetImageWidget();
     }
 }
 
@@ -102,7 +102,6 @@ void ImageWidget::setEnableImageFitWidget(bool flag)
     isEnableFitWidget = flag;
     mActionImageFitWidget->setChecked(isEnableFitWidget);
     resetImageWidget();
-    updateZoomedImage();
 }
 
 void ImageWidget::setEnableSendLeftClickedPos(bool flag)
@@ -236,8 +235,9 @@ void ImageWidget::imageZoomOut()
     {
         zoomScaleX *= 1.1;
         zoomScaleY *= 1.1;
-    }
-    updateZoomedImage();
+        isZoomedParametersChanged = true;
+        updateZoomedImage();
+    }  
 }
 
 void ImageWidget::imageZoomIn()
@@ -246,8 +246,9 @@ void ImageWidget::imageZoomIn()
     {
         zoomScaleX *= 1.0/1.1;
         zoomScaleY *= 1.0/1.1;
-    }
-    updateZoomedImage();
+        isZoomedParametersChanged = true;
+        updateZoomedImage();
+    }  
 }
 
 void ImageWidget::select()
@@ -350,13 +351,27 @@ void ImageWidget::updateZoomedImage()
     // 图像为空直接返回
     if(!isLoadImage)
         return;
-
+    if(isZoomedParametersChanged)
+    {
+        lastZoomedImageWidth = qImageZoomedImage->width();
+        lastZoomedImageHeight = qImageZoomedImage->height();
+    }
     // 减少拖动带来的scaled次数
     if(isEnableFitWidget)
         *qImageZoomedImage = qImageContainer->scaled(this->width()*zoomScaleX,this->height()*zoomScaleY,Qt::KeepAspectRatio);
     else
         *qImageZoomedImage = qImageContainer->scaled(qImageContainer->width()*zoomScaleX,qImageContainer->height()*zoomScaleY,Qt::KeepAspectRatio);
-    qDebug() << "call updateZoomedImage";
+
+    if(isZoomedParametersChanged)
+    {
+        int zoomedImageChangedWith = lastZoomedImageWidth - qImageZoomedImage->width();
+        int zoomedImageChangedHeight = lastZoomedImageHeight - qImageZoomedImage->height();
+        drawImageTopLeftPosX += int(double(zoomedImageChangedWith)*0.5);
+        drawImageTopLeftPosY += int(double(zoomedImageChangedHeight)*0.5);
+        drawImageTopLeftLastPosX = drawImageTopLeftPosX;
+        drawImageTopLeftLastPosY = drawImageTopLeftPosY;
+        isZoomedParametersChanged = false;
+    }
     update();
 }
 

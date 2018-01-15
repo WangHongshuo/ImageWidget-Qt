@@ -67,6 +67,9 @@ private:
     QImage *qImageContainer = NULL;
     QImage *qImageZoomedImage = NULL;
 
+    int lastZoomedImageWidth;
+    int lastZoomedImageHeight;
+
     double zoomScaleX = 1.0;
     double zoomScaleY = 1.0;
 
@@ -82,6 +85,7 @@ private:
     bool isSelectMode = false;
     bool isOnlyShowImage = false;
     bool isImageCloned = false;
+    bool isZoomedParametersChanged = false;
 
     bool isEnableDragImage = true;
     bool isEnableZoomImage = true;
