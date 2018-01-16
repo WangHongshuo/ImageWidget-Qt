@@ -304,28 +304,33 @@ void ImageWidget::emitLeftClickedSignals(QMouseEvent *e)
             emit sendLeftClickedPosInImage(-1,-1);
         else
         {
-            int leftClickedPosXInZoomedImage = e->x()-drawImageTopLeftPosX;
-            int leftClickedPosYInZoomedImage = e->y()-drawImageTopLeftPosY;
-            // 点不在图像上
-            if(leftClickedPosXInZoomedImage < 0 ||
-                    leftClickedPosYInZoomedImage < 0 ||
-                    leftClickedPosXInZoomedImage > qImageZoomedImage->width() ||
-                    leftClickedPosYInZoomedImage > qImageZoomedImage->height())
+            QPoint cursorPosInImage = calculateCursorPosInImage(e->x(),e->y());
+            // 如果光标不在图像上则返回-1
+            if(cursorPosInImage.x() < 0 || cursorPosInImage.y() < 0 ||
+               cursorPosInImage.x() > qImageContainer->width()-1 ||
+               cursorPosInImage.y() > qImageContainer->height()-1)
             {
-                emit sendLeftClickedPosInImage(-1,-1);
-                return;
+                cursorPosInImage.setX(-1);
+                cursorPosInImage.setY(-1);
             }
-            // 点在图像上，根据缩放计算出点在原图上的位置
-            else
-            {
-                double xDivZoomedImageW = double(leftClickedPosXInZoomedImage)/double(qImageZoomedImage->width());
-                double yDivZoomedImageH = double(leftClickedPosYInZoomedImage)/double(qImageZoomedImage->height());
-                int posXInImage = int(double(qImageContainer->width())*xDivZoomedImageW);
-                int posYInImage = int(double(qImageContainer->height())*yDivZoomedImageH);
-                emit sendLeftClickedPosInImage(posXInImage,posYInImage);
-            }
+            emit sendLeftClickedPosInImage(cursorPosInImage.x(),cursorPosInImage.y());
         }
     }
+}
+
+QPoint ImageWidget::calculateCursorPosInImage(int cursorX, int cursprY)
+{
+    // 计算当前光标在图像坐标系中相对于图像原点的位置
+    QPoint returnPoint;
+    int distanceX = cursorX-drawImageTopLeftPosX;
+    int distanceY = cursprY-drawImageTopLeftPosY;
+    double xDivZoomedImageW = double(distanceX)/double(qImageZoomedImage->width());
+    double yDivZoomedImageH = double(distanceY)/double(qImageZoomedImage->height());
+    int posXInImage = int(double(qImageContainer->width())*xDivZoomedImageW);
+    int posYInImage = int(double(qImageContainer->height())*yDivZoomedImageH);
+    returnPoint.setX(posXInImage);
+    returnPoint.setY(posYInImage);
+    return returnPoint;
 }
 
 void ImageWidget::save()
@@ -366,8 +371,13 @@ void ImageWidget::updateZoomedImage()
     {
         int zoomedImageChangedWith = lastZoomedImageWidth - qImageZoomedImage->width();
         int zoomedImageChangedHeight = lastZoomedImageHeight - qImageZoomedImage->height();
-        drawImageTopLeftPosX += int(double(zoomedImageChangedWith)*0.5);
-        drawImageTopLeftPosY += int(double(zoomedImageChangedHeight)*0.5);
+        // 获取当前光标并计算出光标在图像中的位置
+        QPoint cursorPosInWidget = this->mapFromGlobal(QCursor::pos());
+        QPoint cursorPosInImage = calculateCursorPosInImage(cursorPosInWidget.x(),cursorPosInWidget.y());
+        // 根据光标在图像的位置进行调整左上绘图点位置
+        drawImageTopLeftPosX += int(double(zoomedImageChangedWith)*double(cursorPosInImage.x())/double(qImageContainer->width()-1));
+        drawImageTopLeftPosY += int(double(zoomedImageChangedHeight)*double(cursorPosInImage.y())/double(qImageContainer->height()-1));
+
         drawImageTopLeftLastPosX = drawImageTopLeftPosX;
         drawImageTopLeftLastPosY = drawImageTopLeftPosY;
         isZoomedParametersChanged = false;

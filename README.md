@@ -2,7 +2,7 @@
 - This project based on Qt.
 - This project is a submodule, check `.gitignore` before use it.
 ## Introduction: ##
-It's my first time to write a class and this class inherit from QWidget. It can zoom, drag, crop loaded image in the widget, can also return the point position in widget or image your mouse clicked. But it still has some problems with zoom function, huge memory will be occupied when zoom out image.      
+It's my first time to write a class and this class inherit from QWidget. It can zoom in and out, drag, crop loaded image in the widget, can also return the point position in widget or image your mouse clicked. But it still has some problems with zoom in and out function, huge memory will be occupied when zoom out image.      
 
 这是我第一次写的类，该类继承QWidget，在此基础上改写成了显示图像的ImageWidget，有缩放、拖拽、截取、获取左键点击处的Widget坐标和图像内坐标。缩放功能不是很完善，图像的放大会带来更多的内存占用。    
    
@@ -14,10 +14,16 @@ It's my first time to write a class and this class inherit from QWidget. It can 
 ![](https://github.com/WangHongshuo/Readme_Images_Repository/blob/master/ImageWidget-Qt/ImageWidget-Qt_2.gif)
 ## Change Log: ##
 
+- 2018.01.16:
+
+Updated zoom in and out image function and now the image will be zoomed in or out center on the cursor postion.      
+
+更新了缩放图片功能，现在以光标处为中心进行缩放。     
+
 - 2018.01.15:
 
 Optimized `paintEvent`, `QImage::scaled` will not be called when dragging image.      
-Optimized zoom image funciton.     
+Optimized zoom in and out image funciton.     
 
 优化`paintEvent`，在拖拽图片时不调用`QImage::scaled`。     
 优化了缩放图片。       
@@ -60,7 +66,7 @@ Fixed a pointer bug
 
 - 2017.11.17:
 
-Fixed zoom in & zoom out limitation, this function needs huge computer memories when the scale is big, so the max scale is fixed to 12.
+Fixed zoom in and zoom out limitation, this function needs huge computer memories when the scale is big, so the max scale is fixed to 12.
 
 修正放大缩小限制，此功能当放大倍数过大时会占用很大内存，故将最大放大倍数限制为12。
 
