@@ -189,8 +189,11 @@ void SelectRect::cropImage(rectInfo rect)
     }
 }
 
-void SelectRect::receiveParentSizeChangedValue(int width, int height)
+void SelectRect::receiveParentSizeChangedValue(int width, int height, int imageLeftTopPosX, int imageLeftTopPosY)
 {
     this->setGeometry(0,0,width,height);
+    drawImageTopLeftPosX = imageLeftTopPosX;
+    drawImageTopLeftPosY = imageLeftTopPosY;
     update();
 }
+

@@ -44,14 +44,13 @@ public:
 
 protected:
 
-
 signals:
     void sendSelectModeExit();
 public slots:
 
 
 private slots:
-    void receiveParentSizeChangedValue(int width, int height);
+    void receiveParentSizeChangedValue(int width, int height, int imageLeftTopPosX, int imageLeftTopPosY);
     void selectExit();
     void selectReset();
     void crop();
@@ -71,7 +70,9 @@ private:
     QAction* subActionSave;
     QAction* subActionSendRect;
     QAction* subActionExit;
+    // Widget中选中的范围
     rectInfo selectedRectInfo;
+    // Image中选中的范围
     rectInfo fixedRectInfoInImage;
     int mouseLeftClickedPosX;
     int mouseLeftClickedPosY;

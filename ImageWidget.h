@@ -27,7 +27,7 @@ public:
     void setImageWithPointer(QImage* img, bool resetImageWhenLoaded = false);
 
 signals:
-    void parentWidgetSizeChanged(int width, int height);
+    void parentWidgetSizeChanged(int width, int height, int imageLeftTopPosX, int imageLeftTopPosY);
     void sendLeftClickedPos(int x, int y);
     void sendLeftClickedPosInImage(int x, int y);
 
@@ -46,6 +46,9 @@ private slots:
     void save();
     void select();
     void selectModeExit();
+
+protected:
+    void calculateImageLeftTopRelativePosInWidget(const int x, const int y, double &returnX, double &returnY);
 
 private:
     void updateZoomedImage();
@@ -70,6 +73,9 @@ private:
 
     int lastZoomedImageWidth;
     int lastZoomedImageHeight;
+
+    double imageLeftTopRelativePosInWdigetX = 0.0;
+    double imageLeftTopRelativePosInWdigetY = 0.0;
 
     double zoomScaleX = 1.0;
     double zoomScaleY = 1.0;

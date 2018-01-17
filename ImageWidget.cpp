@@ -167,6 +167,9 @@ void ImageWidget::mouseReleaseEvent(QMouseEvent *e)
             // 记录上次图像顶点
             drawImageTopLeftLastPosX = drawImageTopLeftPosX;
             drawImageTopLeftLastPosY = drawImageTopLeftPosY;
+            calculateImageLeftTopRelativePosInWidget(drawImageTopLeftPosX,drawImageTopLeftPosY,
+                                                     imageLeftTopRelativePosInWdigetX,
+                                                     imageLeftTopRelativePosInWdigetY);
             // 释放后鼠标状态置No
             mouseStatus = MOUSE_NO;
         }
@@ -219,8 +222,16 @@ void ImageWidget::contextMenuEvent(QContextMenuEvent *e)
 
 void ImageWidget::resizeEvent(QResizeEvent *event)
 {
+    if(isEnableFitWidget && isLoadImage)
+    {
+        *qImageZoomedImage = qImageContainer->scaled(this->width()*zoomScaleX,this->height()*zoomScaleY,Qt::KeepAspectRatio);
+        drawImageTopLeftPosX = int(double(this->width())*imageLeftTopRelativePosInWdigetX);
+        drawImageTopLeftPosY = int(double(this->height())*imageLeftTopRelativePosInWdigetY);
+        drawImageTopLeftLastPosX = drawImageTopLeftPosX;
+        drawImageTopLeftLastPosY = drawImageTopLeftPosY;
+    }
     if(isSelectMode && isLoadImage)
-        emit parentWidgetSizeChanged(this->width(),this->height());
+        emit parentWidgetSizeChanged(this->width(),this->height(),drawImageTopLeftPosX,drawImageTopLeftPosY);
 }
 
 void ImageWidget::resetImageWidget()
@@ -259,8 +270,8 @@ void ImageWidget::select()
         SelectRect* m = new SelectRect(this);
         m->setGeometry(0,0,this->geometry().width(),this->geometry().height());
         connect(m,SIGNAL(sendSelectModeExit()),this,SLOT(selectModeExit()));
-        connect(this,SIGNAL(parentWidgetSizeChanged(int,int)),
-                m,SLOT(receiveParentSizeChangedValue(int,int)));
+        connect(this,SIGNAL(parentWidgetSizeChanged(int,int,int,int)),
+                m,SLOT(receiveParentSizeChangedValue(int,int,int,int)));
         m->setImage(qImageZoomedImage,drawImageTopLeftPosX,drawImageTopLeftPosY);
         m->show();
     }
@@ -333,6 +344,13 @@ QPoint ImageWidget::calculateCursorPosInImage(int cursorX, int cursprY)
     return returnPoint;
 }
 
+void ImageWidget::calculateImageLeftTopRelativePosInWidget(const int x, const int y, double &returnX, double &returnY)
+{
+    returnX = double(x)/double(this->width());
+    returnY = double(y)/double(this->height());
+}
+
+
 void ImageWidget::save()
 {
     if(isLoadImage)
@@ -380,6 +398,9 @@ void ImageWidget::updateZoomedImage()
 
         drawImageTopLeftLastPosX = drawImageTopLeftPosX;
         drawImageTopLeftLastPosY = drawImageTopLeftPosY;
+        calculateImageLeftTopRelativePosInWidget(drawImageTopLeftPosX,drawImageTopLeftPosY,
+                                                 imageLeftTopRelativePosInWdigetX,
+                                                 imageLeftTopRelativePosInWdigetY);
         isZoomedParametersChanged = false;
     }
     update();
@@ -390,4 +411,6 @@ void ImageWidget::setDefaultParameters()
     zoomScaleX = zoomScaleY = 1.0;
     drawImageTopLeftPosX = drawImageTopLeftLastPosX = 0;
     drawImageTopLeftPosY = drawImageTopLeftLastPosY = 0;
+    imageLeftTopRelativePosInWdigetX = 0.0;
+    imageLeftTopRelativePosInWdigetY = 0.0;
 }
