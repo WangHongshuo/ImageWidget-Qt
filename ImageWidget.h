@@ -1,4 +1,9 @@
-// UTF-8 without BOM
+﻿// UTF-8 with BOM
+
+// Avoid gibberish when use MSVC
+#if _MSC_VER >= 1600
+#pragma execution_character_set("utf-8")
+#endif
 
 #pragma once
 #include <QWidget>

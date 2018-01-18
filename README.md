@@ -14,6 +14,12 @@ It's my first time to write a class and this class inherit from QWidget. It can 
 ![](https://github.com/WangHongshuo/Readme_Images_Repository/blob/master/ImageWidget-Qt/ImageWidget-Qt_2.gif)
 ## Change Log: ##
 
+## 2018.01.17: ##
+
+Added macro to fix Chinese character gibberish problem when using MSVC.     
+
+添加宏修复MSVC下中文乱码问题。     
+
 - 2018.01.16:
 
 Updated zoom in and out image function and now the image will be zoomed in or out center on the cursor postion.      

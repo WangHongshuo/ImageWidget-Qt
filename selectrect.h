@@ -1,4 +1,9 @@
-// UTF-8 without BOM
+﻿// UTF-8 with BOM
+
+// Avoid gibberish when use MSVC
+#if _MSC_VER >= 1600
+#pragma execution_character_set("utf-8")
+#endif
 
 #ifndef SELECTRECT_H
 #define SELECTRECT_H
@@ -70,9 +75,9 @@ private:
     QAction* subActionSave;
     QAction* subActionSendRect;
     QAction* subActionExit;
-    // Widget��ѡ�еķ�Χ
+    // Widget中选中的范围
     rectInfo selectedRectInfo;
-    // Image��ѡ�еķ�Χ
+    // Image中选中的范围
     rectInfo fixedRectInfoInImage;
     int mouseLeftClickedPosX;
     int mouseLeftClickedPosY;

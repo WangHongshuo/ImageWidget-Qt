@@ -1,4 +1,9 @@
-// UTF-8 without BOM
+﻿// UTF-8 with BOM
+
+// Avoid gibberish when use MSVC
+#if _MSC_VER >= 1600
+#pragma execution_character_set("utf-8")
+#endif
 
 #include "selectrect.h"
 #include <iostream>
@@ -178,13 +183,13 @@ void SelectRect::cropImage(rectInfo rect)
         }
         else
         {
-            QMessageBox msgBox(QMessageBox::Critical,tr("错误"),tr("未选中图像！"));
+            QMessageBox msgBox(QMessageBox::Critical,tr("错误"),tr("未选中图像!"));
             msgBox.exec();
         }
     }
     else
     {
-        QMessageBox msgBox(QMessageBox::Critical,tr("错误"),tr("未选中图像！"));
+        QMessageBox msgBox(QMessageBox::Critical,tr("错误"),tr("未选中图像!"));
         msgBox.exec();
     }
 }
