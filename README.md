@@ -14,7 +14,7 @@ It's my first time to write a class and this class inherit from QWidget. It can 
 ![](https://github.com/WangHongshuo/Readme_Images_Repository/blob/master/ImageWidget-Qt/ImageWidget-Qt_2.gif)
 ## Change Log: ##
 
-## 2018.01.17: ##
+- 2018.01.17:     
 
 Added macro to fix Chinese character gibberish problem when using MSVC.     
 
