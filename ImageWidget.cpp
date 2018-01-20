@@ -21,12 +21,13 @@ ImageWidget::ImageWidget(QWidget *parent):QWidget(parent)
 
 ImageWidget::~ImageWidget()
 {
-    if(isLoadImage)
-        qImageContainer = NULL;
     if(isImageCloned)
         delete qImageContainer;
+    if(isLoadImage)
+        qImageContainer = NULL;
     delete  mMenu;
     delete qImageZoomedImage;
+    qImageZoomedImage = NULL;
 }
 
 void ImageWidget::setImageWithData(QImage img, bool resetImageWhenLoaded)
@@ -77,7 +78,10 @@ void ImageWidget::clear()
     {
         isLoadImage = false;
         if(isImageCloned)
+        {
             delete qImageContainer;
+            qImageContainer = NULL;
+        }
         else
             qImageContainer = NULL;
         resetImageWidget();
