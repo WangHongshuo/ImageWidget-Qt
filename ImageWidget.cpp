@@ -297,7 +297,7 @@ void ImageWidget::initializeContextmenu()
     mMenu = new QMenu(this);
     mMenuAdditionalFunction = new QMenu(mMenu);
 
-    mActionResetPos = mMenu->addAction(tr("重置"));
+    mActionResetParameters = mMenu->addAction(tr("重置"));
     mActionSave = mMenu->addAction(tr("另存为"));
     mActionSelect = mMenu->addAction(tr("截取"));
     mMenuAdditionalFunction = mMenu->addMenu(tr("更多功能"));
@@ -316,7 +316,7 @@ void ImageWidget::initializeContextmenu()
     mActionImageFitWidget->setChecked(isEnableFitWidget);
     mActionRecordLastParameters->setChecked(isEnableRecordLastParameters);
 
-    connect(mActionResetPos,SIGNAL(triggered()),this,SLOT(resetImageWidget()));
+    connect(mActionResetParameters,SIGNAL(triggered()),this,SLOT(resetImageWidget()));
     connect(mActionSave,SIGNAL(triggered()),this,SLOT(save()));
     connect(mActionSelect,SIGNAL(triggered()),this,SLOT(select()));
     connect(mActionEnableDrag,SIGNAL(toggled(bool)),this,SLOT(setEnableDragImage(bool)));
