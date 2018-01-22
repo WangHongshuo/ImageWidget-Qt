@@ -25,12 +25,11 @@ ImageWidget::~ImageWidget()
         delete qImageContainer;
     if(isLoadImage)
         qImageContainer = NULL;
-    delete  mMenu;
     delete qImageZoomedImage;
     qImageZoomedImage = NULL;
 }
 
-void ImageWidget::setImageWithData(QImage img, bool resetImageWhenLoaded)
+void ImageWidget::setImageWithData(QImage img)
 {
     if(!isImageCloned)
     {
@@ -47,14 +46,14 @@ void ImageWidget::setImageWithData(QImage img, bool resetImageWhenLoaded)
         *qImageContainer = img.copy();
 //        qDebug() << qImageContainer->bits() << img.bits();
         isLoadImage = true;
-        if(resetImageWhenLoaded)
+        if(!isEnableRecordLastParameters)
             setDefaultParameters();
         *qImageZoomedImage = img.copy();
         updateZoomedImage();
     }
 }
 
-void ImageWidget::setImageWithPointer(QImage *img, bool resetImageWhenLoaded)
+void ImageWidget::setImageWithPointer(QImage *img)
 {
     if(img->isNull())
     {
@@ -65,7 +64,7 @@ void ImageWidget::setImageWithPointer(QImage *img, bool resetImageWhenLoaded)
     {
         qImageContainer = img;
         isLoadImage = true;
-        if(resetImageWhenLoaded)
+        if(!isEnableRecordLastParameters)
             setDefaultParameters();
         *qImageZoomedImage = img->copy();
         updateZoomedImage();
@@ -111,6 +110,12 @@ void ImageWidget::setEnableImageFitWidget(bool flag)
     isEnableFitWidget = flag;
     mActionImageFitWidget->setChecked(isEnableFitWidget);
     resetImageWidget();
+}
+
+void ImageWidget::setEnableRecordLastParameters(bool flag)
+{
+    isEnableRecordLastParameters = flag;
+    mActionRecordLastParameters->setChecked(isEnableRecordLastParameters);
 }
 
 void ImageWidget::setEnableSendLeftClickedPos(bool flag)
@@ -289,21 +294,27 @@ void ImageWidget::select()
 
 void ImageWidget::initializeContextmenu()
 {
-    mMenu = new QMenu();
+    mMenu = new QMenu(this);
+    mMenuAdditionalFunction = new QMenu(mMenu);
+
     mActionResetPos = mMenu->addAction(tr("重置"));
     mActionSave = mMenu->addAction(tr("另存为"));
     mActionSelect = mMenu->addAction(tr("截取"));
-    mActionEnableDrag = mMenu->addAction(tr("启用拖拽"));
-    mActionEnableZoom = mMenu->addAction(tr("启用缩放"));
-    mActionImageFitWidget = mMenu->addAction(tr("自适应大小"));
+    mMenuAdditionalFunction = mMenu->addMenu(tr("更多功能"));
+    mActionEnableDrag = mMenuAdditionalFunction->addAction(tr("启用拖拽"));
+    mActionEnableZoom = mMenuAdditionalFunction->addAction(tr("启用缩放"));
+    mActionImageFitWidget = mMenuAdditionalFunction->addAction(tr("自适应大小"));
+    mActionRecordLastParameters = mMenuAdditionalFunction->addAction(tr("记住上次参数"));
 
     mActionEnableDrag->setCheckable(true);
     mActionEnableZoom->setCheckable(true);
     mActionImageFitWidget->setCheckable(true);
+    mActionRecordLastParameters->setCheckable(true);
 
     mActionEnableDrag->setChecked(isEnableDragImage);
     mActionEnableZoom->setChecked(isEnableZoomImage);
     mActionImageFitWidget->setChecked(isEnableFitWidget);
+    mActionRecordLastParameters->setChecked(isEnableRecordLastParameters);
 
     connect(mActionResetPos,SIGNAL(triggered()),this,SLOT(resetImageWidget()));
     connect(mActionSave,SIGNAL(triggered()),this,SLOT(save()));
@@ -311,6 +322,7 @@ void ImageWidget::initializeContextmenu()
     connect(mActionEnableDrag,SIGNAL(toggled(bool)),this,SLOT(setEnableDragImage(bool)));
     connect(mActionEnableZoom,SIGNAL(toggled(bool)),this,SLOT(setEnableZoomImage(bool)));
     connect(mActionImageFitWidget,SIGNAL(toggled(bool)),this,SLOT(setEnableImageFitWidget(bool)));
+    connect(mActionRecordLastParameters,SIGNAL(toggled(bool)),this,SLOT(setEnableRecordLastParameters(bool)));
 }
 
 void ImageWidget::emitLeftClickedSignals(QMouseEvent *e)

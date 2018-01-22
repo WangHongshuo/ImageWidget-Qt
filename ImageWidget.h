@@ -28,8 +28,8 @@ public:
     ImageWidget(QWidget *parent);
 	~ImageWidget();
 
-    void setImageWithData(QImage img, bool resetImageWhenLoaded = false);
-    void setImageWithPointer(QImage* img, bool resetImageWhenLoaded = false);
+    void setImageWithData(QImage img);
+    void setImageWithPointer(QImage* img);
 
 signals:
     void parentWidgetSizeChanged(int width, int height, int imageLeftTopPosX, int imageLeftTopPosY);
@@ -42,6 +42,7 @@ public slots:
     void setEnableDragImage(bool flag = true);
     void setEnableZoomImage(bool flag = true);
     void setEnableImageFitWidget(bool flag = true);
+    void setEnableRecordLastParameters(bool flag = false);
     // 发送点击位置坐标信号默认关闭，使用前需要开启
     void setEnableSendLeftClickedPos(bool flag = false);
     void setEnableSendLeftClickedPosInImage(bool flag = false);
@@ -102,16 +103,20 @@ private:
     bool isEnableDragImage = true;
     bool isEnableZoomImage = true;
     bool isEnableFitWidget = true;
+    bool isEnableRecordLastParameters = false;
     bool isEnableSendLeftClickedPos = false;
     bool isEnableSendLeftClickedPosInImage = false;
 
     int mouseStatus = MOUSE_NO;
-
-    QMenu* mMenu = NULL;
-    QAction *mActionResetPos = NULL;
+    // 1
+    QMenu *mMenu = NULL;
+    QAction *mActionResetParameters = NULL;
     QAction *mActionSave = NULL;
     QAction *mActionSelect = NULL;
+    // 2
+    QMenu *mMenuAdditionalFunction = NULL;
     QAction *mActionEnableDrag = NULL;
     QAction *mActionEnableZoom = NULL;
-    QAction *mActionImageFitWidget = NULL; 
+    QAction *mActionImageFitWidget = NULL;
+    QAction *mActionRecordLastParameters = NULL;
 };
