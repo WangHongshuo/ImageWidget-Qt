@@ -64,7 +64,8 @@ private:
     void getDrawImageTopLeftPos(int x,int y);
     void initializeContextmenu();
     void emitLeftClickedSignals(QMouseEvent *e);
-    QPoint calculateCursorPosInImage(int x, int y);
+    QPoint calculateCursorPosInImage(QPoint cursorPos);
+    QPoint calculateCursorPosInZoomedImage(QPoint cursorPos);
 
     void wheelEvent(QWheelEvent *e);
     void mouseMoveEvent(QMouseEvent * e);
