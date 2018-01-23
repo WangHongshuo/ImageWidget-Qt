@@ -32,6 +32,7 @@ SelectRect::~SelectRect()
 //    disconnect(this,SIGNAL(select_mode_exit()),this->parent(),SLOT(is_select_mode_exit()));
     image = NULL;
     delete subMenu;
+    subMenu = NULL;
 }
 
 void SelectRect::paintEvent(QPaintEvent *event)

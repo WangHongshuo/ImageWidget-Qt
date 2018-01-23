@@ -46,10 +46,11 @@ void ImageWidget::setImageWithData(QImage img)
         *qImageContainer = img.copy();
 //        qDebug() << qImageContainer->bits() << img.bits();
         isLoadImage = true;
-        if(!isEnableRecordLastParameters)
-            setDefaultParameters();
         *qImageZoomedImage = img.copy();
         updateZoomedImage();
+        if(!isEnableRecordLastParameters)
+            setDefaultParameters();
+        update();
     }
 }
 
@@ -64,10 +65,11 @@ void ImageWidget::setImageWithPointer(QImage *img)
     {
         qImageContainer = img;
         isLoadImage = true;
-        if(!isEnableRecordLastParameters)
-            setDefaultParameters();
         *qImageZoomedImage = img->copy();
         updateZoomedImage();
+        if(!isEnableRecordLastParameters)
+            setDefaultParameters();
+        update();
     }
 }
 
@@ -143,6 +145,7 @@ void ImageWidget::wheelEvent(QWheelEvent *e)
             imageZoomIn();
         }
         updateZoomedImage();
+        update();
     }
 }
 
@@ -252,6 +255,7 @@ void ImageWidget::resetImageWidget()
 {
     setDefaultParameters();
     updateZoomedImage();
+    update();
 }
 
 void ImageWidget::imageZoomOut()
@@ -261,7 +265,6 @@ void ImageWidget::imageZoomOut()
         zoomScaleX *= 1.1;
         zoomScaleY *= 1.1;
         isZoomedParametersChanged = true;
-        updateZoomedImage();
     }  
 }
 
@@ -272,7 +275,6 @@ void ImageWidget::imageZoomIn()
         zoomScaleX *= 1.0/1.1;
         zoomScaleY *= 1.0/1.1;
         isZoomedParametersChanged = true;
-        updateZoomedImage();
     }  
 }
 
@@ -424,7 +426,6 @@ void ImageWidget::updateZoomedImage()
                                                  imageLeftTopRelativePosInWdigetY);
         isZoomedParametersChanged = false;
     }
-    update();
 }
 
 void ImageWidget::setDefaultParameters()
