@@ -58,7 +58,6 @@ protected:
 
 private:
     void updateZoomedImage();
-    void setDefaultParameters();
     void imageZoomOut();
     void imageZoomIn();
     void getDrawImageTopLeftPos(int x,int y);
@@ -66,6 +65,8 @@ private:
     void emitLeftClickedSignals(QMouseEvent *e);
     QPoint calculateCursorPosInImage(QPoint cursorPos);
     QPoint calculateCursorPosInZoomedImage(QPoint cursorPos);
+    void setDefaultParameters();
+    void setImageInCenter();
 
     void wheelEvent(QWheelEvent *e);
     void mouseMoveEvent(QMouseEvent * e);

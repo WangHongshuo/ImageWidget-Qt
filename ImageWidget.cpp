@@ -242,10 +242,20 @@ void ImageWidget::resizeEvent(QResizeEvent *event)
     if(isEnableFitWidget && isLoadImage)
     {
         *qImageZoomedImage = qImageContainer->scaled(this->width()*zoomScaleX,this->height()*zoomScaleY,Qt::KeepAspectRatio);
-        drawImageTopLeftPosX = int(double(this->width())*imageLeftTopRelativePosInWdigetX);
-        drawImageTopLeftPosY = int(double(this->height())*imageLeftTopRelativePosInWdigetY);
-        drawImageTopLeftLastPosX = drawImageTopLeftPosX;
-        drawImageTopLeftLastPosY = drawImageTopLeftPosY;
+        // 如果图像没有被拖拽或者缩放过 置中
+        if((drawImageTopLeftPosX == 0 || drawImageTopLeftPosY == 0) &&
+                qImageZoomedImage->width() <= this->width() &&
+                qImageZoomedImage->height() <= this->height())
+        {
+            setImageInCenter();
+        }
+        else
+        {
+            drawImageTopLeftPosX = int(double(this->width())*imageLeftTopRelativePosInWdigetX);
+            drawImageTopLeftPosY = int(double(this->height())*imageLeftTopRelativePosInWdigetY);
+            drawImageTopLeftLastPosX = drawImageTopLeftPosX;
+            drawImageTopLeftLastPosY = drawImageTopLeftPosY;
+        }
     }
     if(isSelectMode && isLoadImage)
         emit parentWidgetSizeChanged(this->width(),this->height(),drawImageTopLeftPosX,drawImageTopLeftPosY);
@@ -447,14 +457,7 @@ void ImageWidget::setDefaultParameters()
     {
         // 首先恢复zoomedImage大小再调整drawPos
         updateZoomedImage();
-        if(this->width()>qImageZoomedImage->width())
-            drawImageTopLeftPosX = drawImageTopLeftLastPosX = int(double(this->width()-qImageZoomedImage->width())*0.5);
-        else
-            drawImageTopLeftPosX = drawImageTopLeftLastPosX = 0;
-        if(this->height()>qImageZoomedImage->height())
-            drawImageTopLeftPosY = drawImageTopLeftLastPosY = int(double(this->height()-qImageZoomedImage->height())*0.5);
-        else
-            drawImageTopLeftPosY = drawImageTopLeftLastPosY = 0;
+        setImageInCenter();
         calculateImageLeftTopRelativePosInWidget(drawImageTopLeftPosX,drawImageTopLeftPosY,
                                                  imageLeftTopRelativePosInWdigetX,
                                                  imageLeftTopRelativePosInWdigetY);
@@ -466,4 +469,16 @@ void ImageWidget::setDefaultParameters()
         imageLeftTopRelativePosInWdigetX = 0.0;
         imageLeftTopRelativePosInWdigetY = 0.0;
     }
+}
+
+void ImageWidget::setImageInCenter()
+{
+    if(this->width()>qImageZoomedImage->width())
+        drawImageTopLeftPosX = drawImageTopLeftLastPosX = int(double(this->width()-qImageZoomedImage->width())*0.5);
+    else
+        drawImageTopLeftPosX = drawImageTopLeftLastPosX = 0;
+    if(this->height()>qImageZoomedImage->height())
+        drawImageTopLeftPosY = drawImageTopLeftLastPosY = int(double(this->height()-qImageZoomedImage->height())*0.5);
+    else
+        drawImageTopLeftPosY = drawImageTopLeftLastPosY = 0;
 }

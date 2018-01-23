@@ -40,14 +40,13 @@ void SelectRect::paintEvent(QPaintEvent *event)
     // 背景
     QPainterPath mask;
     // 选中的范围
-    QPainterPath select_area;
+    QPainterPath selectArea;
     // 椭圆
 //    QRect boundingRectangle(rect.x,rect.y,rect.w,rect.h);
 //    select_area.addEllipse(boundingRectangle);
-    select_area.addRect(selectedRectInfo.x,selectedRectInfo.y,selectedRectInfo.w,selectedRectInfo.h);
+    selectArea.addRect(selectedRectInfo.x,selectedRectInfo.y,selectedRectInfo.w,selectedRectInfo.h);
     mask.addRect(this->geometry());
-    QPainterPath drawMask =mask.subtracted(select_area);
-
+    QPainterPath drawMask =mask.subtracted(selectArea);
     QPainter paint(this);
     paint.setOpacity(0.5);
     paint.fillPath(drawMask,QBrush(Qt::black));
