@@ -31,6 +31,7 @@ SelectRect::~SelectRect()
 //    disconnect(this->parent(),SIGNAL(parent_widget_size_changed(int,int)),this,SLOT(receive_parent_size_changed_value(int,int)));
 //    disconnect(this,SIGNAL(select_mode_exit()),this->parent(),SLOT(is_select_mode_exit()));
     image = NULL;
+    zoomedImage = NULL;
     delete subMenu;
     subMenu = NULL;
 }
@@ -47,10 +48,11 @@ void SelectRect::paintEvent(QPaintEvent *event)
     selectArea.addRect(selectedRectInfo.x,selectedRectInfo.y,selectedRectInfo.w,selectedRectInfo.h);
     mask.addRect(this->geometry());
     QPainterPath drawMask =mask.subtracted(selectArea);
-    QPainter paint(this);
-    paint.setOpacity(0.5);
-    paint.fillPath(drawMask,QBrush(Qt::black));
 
+    QPainter painter(this);
+    painter.setPen(QPen(QColor(0, 140, 255, 255), 2));
+    painter.fillPath(drawMask,QBrush(QColor(0,0,0,160)));
+    painter.drawRect(QRect(selectedRectInfo.x,selectedRectInfo.y,selectedRectInfo.w,selectedRectInfo.h));
 }
 
 void SelectRect::mousePressEvent(QMouseEvent *event)
@@ -174,7 +176,7 @@ void SelectRect::cropImage(rectInfo rect)
     {
         if(rect.w > 0 && rect.h > 0)
         {
-            QImage saveImageTemp = image->copy(rect.x,rect.y,rect.w,rect.h);
+            QImage saveImageTemp = zoomedImage->copy(rect.x,rect.y,rect.w,rect.h);
             QString filename = QFileDialog::getSaveFileName(this, tr("Save File"),
                                                             QCoreApplication::applicationDirPath(),
                                                             tr("Images (*.png *.xpm *.jpg *.tiff *.bmp)"));

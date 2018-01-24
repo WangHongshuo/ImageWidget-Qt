@@ -36,9 +36,10 @@ public:
 
     SelectRect(QWidget *parent);
     ~SelectRect();
-    void setImage(QImage *img,int x,int y)
+    void setImage(QImage *img, QImage *zoomedImg, int x,int y)
     {
         image = img;
+        zoomedImage = zoomedImg;
         drawImageTopLeftPosX = x;
         drawImageTopLeftPosY = y;
         isImageLoad = true;
@@ -83,6 +84,7 @@ private:
     int mouseLeftClickedPosY;
     int mouseStatus;
     QImage* image = NULL;
+    QImage *zoomedImage = NULL;
     bool isImageLoad;
 };
 

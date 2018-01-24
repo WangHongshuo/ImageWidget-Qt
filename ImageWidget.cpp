@@ -298,7 +298,7 @@ void ImageWidget::select()
         connect(m,SIGNAL(sendSelectModeExit()),this,SLOT(selectModeExit()));
         connect(this,SIGNAL(parentWidgetSizeChanged(int,int,int,int)),
                 m,SLOT(receiveParentSizeChangedValue(int,int,int,int)));
-        m->setImage(qImageZoomedImage,drawImageTopLeftPosX,drawImageTopLeftPosY);
+        m->setImage(qImageContainer,qImageZoomedImage,drawImageTopLeftPosX,drawImageTopLeftPosY);
         m->show();
     }
 }
