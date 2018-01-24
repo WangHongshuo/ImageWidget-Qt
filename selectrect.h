@@ -19,15 +19,37 @@
 #include "ImageWidget.h"
 
 
-typedef struct rectInfo
+class RectInfo
 {
-    int x = 0;
-    int y = 0;
+public :
+    RectInfo(int x, int y, int width, int height)
+    {
+        x1 = x;
+        y1 = y;
+        w = width;
+        h = height;
+    }
+    RectInfo()
+    {
+
+    }
+    ~RectInfo()
+    {
+
+    }
+    int x1 = 0;
+    int y1 = 0;
     int w = 0;
     int h = 0;
-
-}rectInfo;
-Q_DECLARE_METATYPE(rectInfo)
+    int x2()
+    {
+        return x1+w-1;
+    }
+    int y2()
+    {
+        return y1+h-1;
+    }
+};
 
 class SelectRect : public QWidget
 {
@@ -42,7 +64,7 @@ public:
         zoomedImage = zoomedImg;
         drawImageTopLeftPosX = x;
         drawImageTopLeftPosY = y;
-        isImageLoad = true;
+        isLoadImage = true;
     }
 
     int drawImageTopLeftPosX = -1;
@@ -68,24 +90,26 @@ private:
     void mouseMoveEvent(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);
     void contextMenuEvent(QContextMenuEvent *event);
-    void cropImage(rectInfo rect);
-    rectInfo fixRectInfoInImage(rectInfo rect);
+    void cropImage(RectInfo rect);
+    RectInfo fixRectInfoInImage(RectInfo rect);
+    bool isCursorPosInSelectedArea(QPoint cursorPos);
 
-    QMenu* subMenu;
-    QAction* subActionReset;
-    QAction* subActionSave;
-    QAction* subActionSendRect;
-    QAction* subActionExit;
+    QMenu *subMenu = NULL;
+    QAction *subActionReset = NULL;
+    QAction *subActionSave = NULL;
+    QAction *subActionSendRect = NULL;
+    QAction *subActionExit = NULL;
     // Widget中选中的范围
-    rectInfo selectedRectInfo;
+    RectInfo selectedRectInfo;
     // Image中选中的范围
-    rectInfo fixedRectInfoInImage;
-    int mouseLeftClickedPosX;
-    int mouseLeftClickedPosY;
+    RectInfo fixedRectInfoInImage;
+    int mouseLeftClickedPosX = 0;
+    int mouseLeftClickedPosY = 0;
     int mouseStatus;
     QImage* image = NULL;
     QImage *zoomedImage = NULL;
-    bool isImageLoad;
+    bool isLoadImage = false;
+    bool isCursorInSelectedArea = false;
 };
 
 #endif // SELECTRECT_H
