@@ -64,6 +64,8 @@ void SelectRect::mousePressEvent(QMouseEvent *event)
             mouseStatus = Qt::LeftButton;
             mouseLeftClickedPosX = event->x();
             mouseLeftClickedPosY = event->y();
+            if(isCursorInSelectedArea)
+                this->setCursor(Qt::ClosedHandCursor);
             // 关闭鼠标追踪 节省资源
             this->setMouseTracking(false);
             break;
@@ -132,6 +134,7 @@ void SelectRect::mouseReleaseEvent(QMouseEvent *event)
     mouseStatus = Qt::NoButton;
     // 开启鼠标追踪
     this->setMouseTracking(true);
+    this->setCursor(Qt::OpenHandCursor);
 }
 
 void SelectRect::contextMenuEvent(QContextMenuEvent *event)
