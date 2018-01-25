@@ -12,7 +12,7 @@ It's my first time to write a class and this class inherit from QWidget. It can 
 ## Screenshot: ##
 ![](https://github.com/WangHongshuo/Readme_Images_Repository/blob/master/ImageWidget-Qt/ImageWidget-Qt_1.jpg)   
 ![](https://github.com/WangHongshuo/Readme_Images_Repository/blob/master/ImageWidget-Qt/ImageWidget-Qt_2.gif)
-## Change Log: ##
+## Last Change: ##
 
 - 2018.01.25:
 
@@ -20,7 +20,7 @@ Added a new method to crop image, you can crop the zoomed image (the image you a
 
 添加了新的截图方式。可以截取选定区域的缩放后的图像(实际看到的)或原始图像(选中区域在原始图像上的部分)。     
 
-
+- Full [Change Log](./ChangeLog.md)
 
 
 
