@@ -41,6 +41,18 @@ public :
     int y1 = 0;
     int w = 0;
     int h = 0;
+    int x2() const
+    {
+        return x1+w;
+    }
+    int y2() const
+    {
+        return y1+h;
+    }
+    void clear()
+    {
+        x1 = y1 = w = h = 0;
+    }
 };
 
 class SelectRect : public QWidget
@@ -84,7 +96,7 @@ private:
     void saveImage(const QImage *img, RectInfo rect);
     void fixRectInfo(RectInfo &rect);
     RectInfo calculateRectInfoInImage(const QImage *img, const QPoint &leftTopPos, RectInfo rect);
-    bool isCursorPosInSelectedArea(QPoint cursorPos);
+    bool isCursorPosInSelectedArea(const RectInfo &rect, QPoint cursorPos);
 
     QMenu *mMenu = NULL;
     QAction *mActionReset = NULL;
@@ -93,6 +105,7 @@ private:
     QAction *mActionExit = NULL;
     // Widget中选中的范围
     RectInfo selectedRectInfo;
+    RectInfo lastSelectedRectInfo;
     // Image中选中的范围
     RectInfo fixedRectInfoInImage;
     int mouseLeftClickedPosX = 0;

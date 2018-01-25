@@ -12,7 +12,7 @@
 
 SelectRect::SelectRect(QWidget *parent) : QWidget(parent)
 {
-    mouseStatus = MOUSE_NO;
+    mouseStatus = Qt::NoButton;
 
     // 初始化右键菜单
     mMenu = new QMenu(this);
@@ -61,62 +61,83 @@ void SelectRect::mousePressEvent(QMouseEvent *event)
         switch(event->button())
         {
         case Qt::LeftButton:
-            mouseStatus = MOUSE_LEFT;
+            mouseStatus = Qt::LeftButton;
             mouseLeftClickedPosX = event->x();
             mouseLeftClickedPosY = event->y();
-//            qDebug() << first_mousePosX << first_mousePosX;
+            // 关闭鼠标追踪 节省资源
+            this->setMouseTracking(false);
             break;
         case Qt::RightButton:
-            mouseStatus = MOUSE_RIGHT;
+            mouseStatus = Qt::RightButton;
             break;
         case Qt::MiddleButton:
-            mouseStatus = MOUSE_MID;
+            mouseStatus = Qt::MiddleButton;
             break;
         default:
-            mouseStatus = MOUSE_NO;
+            mouseStatus = Qt::NoButton;
     }
 }
 
 void SelectRect::mouseMoveEvent(QMouseEvent *event)
 {
-    if (mouseStatus == MOUSE_LEFT )
+    if (mouseStatus == Qt::LeftButton )
     {
-        // 限定在mask内
-        selectedRectInfo.x1 = mouseLeftClickedPosX;
-        selectedRectInfo.y1 = mouseLeftClickedPosY;
-        int x = event->x();
-        int y = event->y();
-        if(x < 0)
-            x = 0;
-        else if(x > this->width())
-            x = this->width();
-        if(y < 0)
-            y = 0;
-        else if (y > this->height())
-            y = this->height();
-        selectedRectInfo.w = x - selectedRectInfo.x1;
-        selectedRectInfo.h = y - selectedRectInfo.y1;
-
+        if(isCursorInSelectedArea)
+        {
+            selectedRectInfo.x1 = lastSelectedRectInfo.x1+(event->x()-mouseLeftClickedPosX);
+            selectedRectInfo.y1 = lastSelectedRectInfo.y1+(event->y()-mouseLeftClickedPosY);
+        }
+        else
+        {
+            // 限定在mask内
+            selectedRectInfo.x1 = mouseLeftClickedPosX;
+            selectedRectInfo.y1 = mouseLeftClickedPosY;
+            int x = event->x();
+            int y = event->y();
+            if(x < 0)
+                x = 0;
+            else if(x > this->width())
+                x = this->width();
+            if(y < 0)
+                y = 0;
+            else if (y > this->height())
+                y = this->height();
+            selectedRectInfo.w = x - selectedRectInfo.x1;
+            selectedRectInfo.h = y - selectedRectInfo.y1;
+        }
+        update();
     }
-    if(mouseStatus == MOUSE_NO)
+    // 判断鼠标是否在矩形框内
+    if(mouseStatus == Qt::NoButton)
     {
-
+        if(isCursorPosInSelectedArea(selectedRectInfo,event->pos()))
+        {
+            this->setCursor(Qt::OpenHandCursor);
+            isCursorInSelectedArea = true;
+        }
+        else
+        {
+            this->setCursor(Qt::ArrowCursor);
+            isCursorInSelectedArea = false;
+        }
     }
-    update();
 }
 
 void SelectRect::mouseReleaseEvent(QMouseEvent *event)
 {
     // 修正RectInfo::w和RectInfo::h为正
     fixRectInfo(selectedRectInfo);
-
-    mouseStatus = MOUSE_NO;
+    // 备份
+    lastSelectedRectInfo = selectedRectInfo;
+    mouseStatus = Qt::NoButton;
+    // 开启鼠标追踪
+    this->setMouseTracking(true);
 }
 
 void SelectRect::contextMenuEvent(QContextMenuEvent *event)
 {
     mMenu->exec(QCursor::pos());
-    mouseStatus = MOUSE_NO;
+    mouseStatus = Qt::NoButton;
 }
 
 RectInfo SelectRect::calculateRectInfoInImage(const QImage *img, const QPoint &leftTopPos, RectInfo rect)
@@ -146,9 +167,13 @@ RectInfo SelectRect::calculateRectInfoInImage(const QImage *img, const QPoint &l
     return returnRectInfo;
 }
 
-bool SelectRect::isCursorPosInSelectedArea(QPoint cursorPos)
-{
-    return 0;
+bool SelectRect::isCursorPosInSelectedArea(const RectInfo &rect,QPoint cursorPos)
+{ 
+    if(rect.x1-cursorPos.x() < 0 && rect.x2()-cursorPos.x() > 0 &&
+       rect.y1-cursorPos.y() < 0 && rect.y2()-cursorPos.y() > 0)
+       return true;
+    else
+       return false;
 }
 
 void SelectRect::selectExit()
@@ -159,8 +184,9 @@ void SelectRect::selectExit()
 
 void SelectRect::selectReset()
 {
-    selectedRectInfo.w = 0;
-    selectedRectInfo.h = 0;
+    selectedRectInfo.clear();
+    // 关闭鼠标追踪 节省资源
+    this->setMouseTracking(false);
     update();
 }
 

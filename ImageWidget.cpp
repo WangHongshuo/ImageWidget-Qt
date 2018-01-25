@@ -156,18 +156,18 @@ void ImageWidget::mousePressEvent(QMouseEvent *e)
         switch(e->button())
         {
         case Qt::LeftButton:
-            mouseStatus = MOUSE_LEFT;
+            mouseStatus = Qt::LeftButton;
             mouseLeftClickedPosX = e->x();
             mouseLeftClickedPosY = e->y();
             break;
         case Qt::RightButton:
-            mouseStatus = MOUSE_RIGHT;
+            mouseStatus = Qt::RightButton;
             break;
         case Qt::MiddleButton:
-            mouseStatus = MOUSE_MID;
+            mouseStatus = Qt::MiddleButton;
             break;
         default:
-            mouseStatus = MOUSE_NO;
+            mouseStatus = Qt::NoButton;
         }
     }
     if(e->button() == Qt::LeftButton)
@@ -179,7 +179,7 @@ void ImageWidget::mouseReleaseEvent(QMouseEvent *e)
 {
     if(isLoadImage && !isOnlyShowImage && isEnableDragImage)
     {
-        if(mouseStatus == MOUSE_LEFT)
+        if(mouseStatus == Qt::LeftButton)
         {
             // 记录上次图像顶点
             drawImageTopLeftLastPosX = drawImageTopLeftPosX;
@@ -188,7 +188,7 @@ void ImageWidget::mouseReleaseEvent(QMouseEvent *e)
                                                      imageLeftTopRelativePosInWdigetX,
                                                      imageLeftTopRelativePosInWdigetY);
             // 释放后鼠标状态置No
-            mouseStatus = MOUSE_NO;
+            mouseStatus = Qt::NoButton;
         }
     }
 }
@@ -198,7 +198,7 @@ void ImageWidget::mouseMoveEvent(QMouseEvent *e)
 {
     if(isLoadImage && !isOnlyShowImage && isEnableDragImage)
     {
-        if(mouseStatus == MOUSE_LEFT )
+        if(mouseStatus == Qt::LeftButton )
         {
             // e->x()和e->y()为当前鼠标坐标 转换为相对移动距离
             //        qDebug() << e->x() << e->y();
@@ -233,7 +233,7 @@ void ImageWidget::contextMenuEvent(QContextMenuEvent *e)
     {
         mMenu->exec(QCursor::pos());
         // 右键菜单弹出后 鼠标状态置No
-        mouseStatus = MOUSE_NO;
+        mouseStatus = Qt::NoButton;
     }
 }
 

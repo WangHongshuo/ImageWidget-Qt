@@ -18,8 +18,6 @@
 #include <QDebug>
 #include "selectrect.h"
 
-enum MouseDown{MOUSE_NO,MOUSE_LEFT,MOUSE_MID,MOUSE_RIGHT};
-
 class ImageWidget :
 	public QWidget
 {
@@ -109,7 +107,7 @@ private:
     bool isEnableSendLeftClickedPos = false;
     bool isEnableSendLeftClickedPosInImage = false;
 
-    int mouseStatus = MOUSE_NO;
+    int mouseStatus = Qt::NoButton;
     // 1
     QMenu *mMenu = NULL;
     QAction *mActionResetParameters = NULL;

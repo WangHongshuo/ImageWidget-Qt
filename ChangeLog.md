@@ -1,7 +1,12 @@
 # Change Log: #
 
+- 2018.01.25 #2:
 
-- 2018.01.25:
+Added dragging selected rect area funciton, but this function needs a lot computing resources, so it can be optimized in the future. Preparing to reduce variables and code.
+
+添加了拖拽选定框功能，但是该功能有些占用CPU，未来可优化。准备优化成员变量，减少代码数量。
+
+- 2018.01.25 #1:
 
 Added a new method to crop image, you can crop the zoomed image (the image you actually seen in the widget) or the original image with the selected rect area     
 
