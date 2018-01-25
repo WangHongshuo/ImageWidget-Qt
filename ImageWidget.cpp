@@ -309,14 +309,14 @@ void ImageWidget::initializeContextmenu()
     mMenu = new QMenu(this);
     mMenuAdditionalFunction = new QMenu(mMenu);
 
-    mActionResetParameters = mMenu->addAction(tr("重置"));
-    mActionSave = mMenu->addAction(tr("另存为"));
-    mActionSelect = mMenu->addAction(tr("截取"));
-    mMenuAdditionalFunction = mMenu->addMenu(tr("更多功能"));
-    mActionEnableDrag = mMenuAdditionalFunction->addAction(tr("启用拖拽"));
-    mActionEnableZoom = mMenuAdditionalFunction->addAction(tr("启用缩放"));
-    mActionImageFitWidget = mMenuAdditionalFunction->addAction(tr("自适应大小"));
-    mActionRecordLastParameters = mMenuAdditionalFunction->addAction(tr("记住上次参数"));
+    mActionResetParameters = mMenu->addAction(tr("重置"));// Reset
+    mActionSave = mMenu->addAction(tr("另存为")); // Save As
+    mActionSelect = mMenu->addAction(tr("截取")); // Crop
+    mMenuAdditionalFunction = mMenu->addMenu(tr("更多功能")); // More Function
+    mActionEnableDrag = mMenuAdditionalFunction->addAction(tr("启用拖拽")); // Enable Drag
+    mActionEnableZoom = mMenuAdditionalFunction->addAction(tr("启用缩放"));// Enable Zoom
+    mActionImageFitWidget = mMenuAdditionalFunction->addAction(tr("自适应大小"));// Enable Image Fit Widget
+    mActionRecordLastParameters = mMenuAdditionalFunction->addAction(tr("记住上次参数"));// Record Last Parameters (such as Scale, Image Position)
 
     mActionEnableDrag->setCheckable(true);
     mActionEnableZoom->setCheckable(true);

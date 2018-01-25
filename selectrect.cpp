@@ -16,10 +16,10 @@ SelectRect::SelectRect(QWidget *parent) : QWidget(parent)
 
     // 初始化右键菜单
     mMenu = new QMenu(this);
-    mActionReset = mMenu->addAction(tr("重选"));
-    mActionSaveZoomedImage = mMenu->addAction(tr("另存为(缩放图像)"));
-    mActionSaveOriginalImage = mMenu->addAction(tr("另存为(实际图像)"));
-    mActionExit = mMenu->addAction(tr("退出"));
+    mActionReset = mMenu->addAction(tr("重选"));// Reset
+    mActionSaveZoomedImage = mMenu->addAction(tr("另存为(缩放图像)"));// Save as (From the zoomed image)
+    mActionSaveOriginalImage = mMenu->addAction(tr("另存为(实际图像)"));// Save as (From the original image)
+    mActionExit = mMenu->addAction(tr("退出"));// Exit
 
     connect(mActionExit,SIGNAL(triggered()),this,SLOT(selectExit()));
     connect(mActionSaveZoomedImage,SIGNAL(triggered()),this,SLOT(cropZoomedImage()));
@@ -198,13 +198,13 @@ void SelectRect::saveImage(const QImage *img,RectInfo rect)
         }
         else
         {
-            QMessageBox msgBox(QMessageBox::Critical,tr("错误"),tr("未选中图像!"));
+            QMessageBox msgBox(QMessageBox::Critical,tr("错误!"),tr("未选中图像!"));// Error! No Image Selected!
             msgBox.exec();
         }
     }
     else
     {
-        QMessageBox msgBox(QMessageBox::Critical,tr("错误"),tr("未选中图像!"));
+        QMessageBox msgBox(QMessageBox::Critical,tr("错误!"),tr("未选中图像!"));// Error! No Image Selected!
         msgBox.exec();
     }
 }
