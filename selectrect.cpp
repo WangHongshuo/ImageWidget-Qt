@@ -15,13 +15,16 @@ SelectRect::SelectRect(QWidget *parent) : QWidget(parent)
     mouseStatus = MOUSE_NO;
 
     // 初始化右键菜单
-    subMenu = new QMenu();
-    subActionReset = subMenu->addAction(tr("重选"));
-    subActionSave = subMenu->addAction(tr("另存为"));
-    subActionExit = subMenu->addAction(tr("退出"));
-    connect(subActionExit,SIGNAL(triggered()),this,SLOT(selectExit()));
-    connect(subActionSave,SIGNAL(triggered()),this,SLOT(crop()));
-    connect(subActionReset,SIGNAL(triggered()),this,SLOT(selectReset()));
+    mMenu = new QMenu(this);
+    mActionReset = mMenu->addAction(tr("重选"));
+    mActionSaveZoomedImage = mMenu->addAction(tr("另存为(缩放图像)"));
+    mActionSaveOriginalImage = mMenu->addAction(tr("另存为(实际图像)"));
+    mActionExit = mMenu->addAction(tr("退出"));
+
+    connect(mActionExit,SIGNAL(triggered()),this,SLOT(selectExit()));
+    connect(mActionSaveZoomedImage,SIGNAL(triggered()),this,SLOT(cropZoomedImage()));
+    connect(mActionSaveOriginalImage,SIGNAL(triggered()),this,SLOT(cropOriginalImage()));
+    connect(mActionReset,SIGNAL(triggered()),this,SLOT(selectReset()));
     // 关闭后释放资源
     this->setAttribute(Qt::WA_DeleteOnClose);
 }
@@ -32,8 +35,7 @@ SelectRect::~SelectRect()
 //    disconnect(this,SIGNAL(select_mode_exit()),this->parent(),SLOT(is_select_mode_exit()));
     image = NULL;
     zoomedImage = NULL;
-    delete subMenu;
-    subMenu = NULL;
+    mMenu = NULL;
 }
 
 void SelectRect::paintEvent(QPaintEvent *event)
@@ -48,9 +50,8 @@ void SelectRect::paintEvent(QPaintEvent *event)
     selectArea.addRect(selectedRectInfo.x1,selectedRectInfo.y1,selectedRectInfo.w,selectedRectInfo.h);
     mask.addRect(this->geometry());
     QPainterPath drawMask =mask.subtracted(selectArea);
-
     QPainter painter(this);
-    painter.setPen(QPen(QColor(0, 140, 255, 255), 2));
+    painter.setPen(QPen(QColor(0, 140, 255, 255), 1));
     painter.fillPath(drawMask,QBrush(QColor(0,0,0,160)));
     painter.drawRect(QRect(selectedRectInfo.x1,selectedRectInfo.y1,selectedRectInfo.w,selectedRectInfo.h));
 }
@@ -106,56 +107,42 @@ void SelectRect::mouseMoveEvent(QMouseEvent *event)
 
 void SelectRect::mouseReleaseEvent(QMouseEvent *event)
 {
-    fixedRectInfoInImage = fixRectInfoInImage(selectedRectInfo);
-//    qDebug() << fixedRectInfoInImage.x1 << fixedRectInfoInImage.w << fixedRectInfoInImage.x2();
-//    qDebug() << fixedRectInfoInImage.y1 << fixedRectInfoInImage.h << fixedRectInfoInImage.y2();
+    // 修正RectInfo::w和RectInfo::h为正
+    fixRectInfo(selectedRectInfo);
+
     mouseStatus = MOUSE_NO;
 }
 
 void SelectRect::contextMenuEvent(QContextMenuEvent *event)
 {
-    subMenu->exec(QCursor::pos());
+    mMenu->exec(QCursor::pos());
     mouseStatus = MOUSE_NO;
 }
 
-RectInfo SelectRect::fixRectInfoInImage(RectInfo rect)
+RectInfo SelectRect::calculateRectInfoInImage(const QImage *img, const QPoint &leftTopPos, RectInfo rect)
 {
-    RectInfo data;
     RectInfo returnRectInfo;
-    data = rect;
-    // 修正矩形坐标
-    if(data.w < 0)
-    {
-        data.x1 += data.w;
-        data.w = -data.w;
-    }
-    if(data.h < 0)
-    {
-        data.y1 += data.h;
-        data.h = -data.h;
-    }
-    //        qDebug() << data.x << data.y << data.w << data.h;
+
     // 计算相对于图像内的坐标
-    returnRectInfo.x1 = data.x1 - drawImageTopLeftPosX;
-    returnRectInfo.y1 = data.y1 - drawImageTopLeftPosY;
-    returnRectInfo.w = data.w;
-    returnRectInfo.h = data.h;
-    // 限定截取范围在图像内
-    // 修正顶点
+    returnRectInfo.x1 = rect.x1 - leftTopPos.x();
+    returnRectInfo.y1 = rect.y1 - leftTopPos.y();
+    returnRectInfo.w = rect.w;
+    returnRectInfo.h = rect.h;
+    // 限定截取范围在图像内 修正顶点
     if(returnRectInfo.x1 < 0)
     {
-        returnRectInfo.w = data.w + returnRectInfo.x1;
+        returnRectInfo.w = rect.w + returnRectInfo.x1;
         returnRectInfo.x1 = 0;
     }
     if (returnRectInfo.y1 < 0)
     {
-        returnRectInfo.h = data.h + returnRectInfo.y1;
+        returnRectInfo.h = rect.h + returnRectInfo.y1;
         returnRectInfo.y1 = 0;
     }
-    if(returnRectInfo.x1 + data.w > zoomedImage->width())
-        returnRectInfo.w = zoomedImage->width() - returnRectInfo.x1;
-    if(returnRectInfo.y1 + data.h > zoomedImage->height())
-        returnRectInfo.h = zoomedImage->height() - returnRectInfo.y1;
+    if(returnRectInfo.x1 + rect.w > img->width())
+        returnRectInfo.w = img->width() - returnRectInfo.x1;
+    if(returnRectInfo.y1 + rect.h > img->height())
+        returnRectInfo.h = img->height() - returnRectInfo.y1;
     return returnRectInfo;
 }
 
@@ -177,21 +164,32 @@ void SelectRect::selectReset()
     update();
 }
 
-void SelectRect::crop()
+void SelectRect::cropZoomedImage()
 {
-    cropImage(fixedRectInfoInImage);
+    fixedRectInfoInImage = calculateRectInfoInImage(zoomedImage,drawImageTopLeftPos,selectedRectInfo);
+    saveImage(zoomedImage,fixedRectInfoInImage);
 }
 
-void SelectRect::cropImage(RectInfo rect)
+void SelectRect::cropOriginalImage()
+{
+    fixedRectInfoInImage = calculateRectInfoInImage(zoomedImage,drawImageTopLeftPos,selectedRectInfo);
+    int x2 = fixedRectInfoInImage.x1 + fixedRectInfoInImage.w;
+    int y2 = fixedRectInfoInImage.y1 + fixedRectInfoInImage.h;
+    fixedRectInfoInImage.x1 = int(round(double(fixedRectInfoInImage.x1)/double(zoomedImage->width())*double(image->width())));
+    fixedRectInfoInImage.y1 = int(round(double(fixedRectInfoInImage.y1)/double(zoomedImage->height())*double(image->height())));
+    fixedRectInfoInImage.w = int(round(double(x2)/double(zoomedImage->width())*double(image->width())))-fixedRectInfoInImage.x1;
+    fixedRectInfoInImage.h = int(round(double(y2)/double(zoomedImage->height())*double(image->height())))-fixedRectInfoInImage.y1;
+    saveImage(image,fixedRectInfoInImage);
+}
+
+void SelectRect::saveImage(const QImage *img,RectInfo rect)
 {
     // 接受到截取框信息
     if(isLoadImage)
     {
-//        qDebug() << rect.x1 << rect.w << rect.x2;
         if(rect.w > 0 && rect.h > 0)
         {
-
-            QImage saveImageTemp = zoomedImage->copy(rect.x1,rect.y1,rect.w,rect.h);
+            QImage saveImageTemp = img->copy(rect.x1,rect.y1,rect.w,rect.h);
             QString filename = QFileDialog::getSaveFileName(this, tr("Save File"),
                                                             QCoreApplication::applicationDirPath(),
                                                             tr("Images (*.png *.xpm *.jpg *.tiff *.bmp)"));
@@ -200,24 +198,36 @@ void SelectRect::cropImage(RectInfo rect)
         }
         else
         {
-            qDebug() << "1";
             QMessageBox msgBox(QMessageBox::Critical,tr("错误"),tr("未选中图像!"));
             msgBox.exec();
         }
     }
     else
     {
-        qDebug() << "2";
         QMessageBox msgBox(QMessageBox::Critical,tr("错误"),tr("未选中图像!"));
         msgBox.exec();
+    }
+}
+
+void SelectRect::fixRectInfo(RectInfo &rect)
+{
+    if(rect.w < 0)
+    {
+        rect.x1 += rect.w;
+        rect.w = -rect.w;
+    }
+    if(rect.h < 0)
+    {
+        rect.y1 += rect.h;
+        rect.h = -rect.h;
     }
 }
 
 void SelectRect::receiveParentSizeChangedValue(int width, int height, int imageLeftTopPosX, int imageLeftTopPosY)
 {
     this->setGeometry(0,0,width,height);
-    drawImageTopLeftPosX = imageLeftTopPosX;
-    drawImageTopLeftPosY = imageLeftTopPosY;
+    drawImageTopLeftPos.setX(imageLeftTopPosX);
+    drawImageTopLeftPos.setY(imageLeftTopPosY);
     update();
 }
 

@@ -41,14 +41,6 @@ public :
     int y1 = 0;
     int w = 0;
     int h = 0;
-    int x2()
-    {
-        return x1+w-1;
-    }
-    int y2()
-    {
-        return y1+h-1;
-    }
 };
 
 class SelectRect : public QWidget
@@ -62,13 +54,11 @@ public:
     {
         image = img;
         zoomedImage = zoomedImg;
-        drawImageTopLeftPosX = x;
-        drawImageTopLeftPosY = y;
+        drawImageTopLeftPos.setX(x);
+        drawImageTopLeftPos.setY(y);
         isLoadImage = true;
     }
-
-    int drawImageTopLeftPosX = -1;
-    int drawImageTopLeftPosY = -1;
+    QPoint drawImageTopLeftPos = QPoint(-1,-1);
 
 protected:
 
@@ -81,7 +71,8 @@ private slots:
     void receiveParentSizeChangedValue(int width, int height, int imageLeftTopPosX, int imageLeftTopPosY);
     void selectExit();
     void selectReset();
-    void crop();
+    void cropZoomedImage();
+    void cropOriginalImage();
 
 private:
 
@@ -90,15 +81,16 @@ private:
     void mouseMoveEvent(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);
     void contextMenuEvent(QContextMenuEvent *event);
-    void cropImage(RectInfo rect);
-    RectInfo fixRectInfoInImage(RectInfo rect);
+    void saveImage(const QImage *img, RectInfo rect);
+    void fixRectInfo(RectInfo &rect);
+    RectInfo calculateRectInfoInImage(const QImage *img, const QPoint &leftTopPos, RectInfo rect);
     bool isCursorPosInSelectedArea(QPoint cursorPos);
 
-    QMenu *subMenu = NULL;
-    QAction *subActionReset = NULL;
-    QAction *subActionSave = NULL;
-    QAction *subActionSendRect = NULL;
-    QAction *subActionExit = NULL;
+    QMenu *mMenu = NULL;
+    QAction *mActionReset = NULL;
+    QAction *mActionSaveZoomedImage = NULL;
+    QAction *mActionSaveOriginalImage = NULL;
+    QAction *mActionExit = NULL;
     // Widget中选中的范围
     RectInfo selectedRectInfo;
     // Image中选中的范围

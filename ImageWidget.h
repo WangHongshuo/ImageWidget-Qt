@@ -63,7 +63,7 @@ private:
     void getDrawImageTopLeftPos(int x,int y);
     void initializeContextmenu();
     void emitLeftClickedSignals(QMouseEvent *e);
-    QPoint calculateCursorPosInImage(QPoint cursorPos);
+    QPoint calculateCursorPosInImage(const QImage *originalImage, const QImage *zoomedImage, const QPoint &imageLeftTopPos, QPoint cursorPos);
     QPoint calculateCursorPosInZoomedImage(QPoint cursorPos);
     void setDefaultParameters();
     void setImageInCenter();
