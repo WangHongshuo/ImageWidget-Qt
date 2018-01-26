@@ -107,8 +107,7 @@ private:
     RectInfo lastSelectedRectInfo;
     // Image中选中的范围
     RectInfo fixedRectInfoInImage;
-    int mouseLeftClickedPosX = 0;
-    int mouseLeftClickedPosY = 0;
+    QPoint mouseLeftClickedPos = QPoint(0,0);
     int mouseStatus;
     QImage* image = NULL;
     QImage *zoomedImage = NULL;

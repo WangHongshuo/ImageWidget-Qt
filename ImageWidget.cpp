@@ -237,7 +237,7 @@ void ImageWidget::resizeEvent(QResizeEvent *event)
 {
     if(isEnableFitWidget && isLoadImage)
     {
-        *qImageZoomedImage = qImageContainer->scaled(this->width()*zoomScaleX,this->height()*zoomScaleY,Qt::KeepAspectRatio);
+        *qImageZoomedImage = qImageContainer->scaled(this->width()*zoomScale,this->height()*zoomScale,Qt::KeepAspectRatio);
         // 如果图像没有被拖拽或者缩放过 置中
         if((drawImageTopLeftPos.x() == 0 || drawImageTopLeftPos.y() == 0) &&
                 qImageZoomedImage->width() <= this->width() &&
@@ -265,20 +265,18 @@ void ImageWidget::resetImageWidget()
 
 void ImageWidget::imageZoomOut()
 {
-    if(zoomScaleX <= 8 && zoomScaleY <= 8)
+    if(zoomScale <= 8)
     {
-        zoomScaleX *= 1.1;
-        zoomScaleY *= 1.1;
+        zoomScale *= 1.1;
         isZoomedParametersChanged = true;
     }  
 }
 
 void ImageWidget::imageZoomIn()
 {
-    if(zoomScaleX >= 0.05 && zoomScaleY >= 0.05)
+    if(zoomScale >= 0.05)
     {
-        zoomScaleX *= 1.0/1.1;
-        zoomScaleY *= 1.0/1.1;
+        zoomScale *= 1.0/1.1;
         isZoomedParametersChanged = true;
     }  
 }
@@ -410,8 +408,7 @@ void ImageWidget::updateZoomedImage()
 
     if(isZoomedParametersChanged)
     {
-        lastZoomedImageWidth = qImageZoomedImage->width();
-        lastZoomedImageHeight = qImageZoomedImage->height();
+        lastZoomedImageSize = qImageZoomedImage->size(),
         // 获取当前光标并计算出光标在图像中的位置
        cursorPosInWidget = this->mapFromGlobal(QCursor::pos());
        cursorPosInImage = calculateCursorPosInImage(qImageContainer,qImageZoomedImage,drawImageTopLeftPos,cursorPosInWidget);
@@ -419,18 +416,17 @@ void ImageWidget::updateZoomedImage()
 
     // 减少拖动带来的QImage::scaled
     if(isEnableFitWidget)
-        *qImageZoomedImage = qImageContainer->scaled(this->width()*zoomScaleX,this->height()*zoomScaleY,Qt::KeepAspectRatio);
+        *qImageZoomedImage = qImageContainer->scaled(this->width()*zoomScale,this->height()*zoomScale,Qt::KeepAspectRatio);
     else
-        *qImageZoomedImage = qImageContainer->scaled(qImageContainer->width()*zoomScaleX,qImageContainer->height()*zoomScaleY,Qt::KeepAspectRatio);
+        *qImageZoomedImage = qImageContainer->scaled(qImageContainer->width()*zoomScale,qImageContainer->height()*zoomScale,Qt::KeepAspectRatio);
 
     if(isZoomedParametersChanged)
     {
-        int zoomedImageChangedWith = lastZoomedImageWidth - qImageZoomedImage->width();
-        int zoomedImageChangedHeight = lastZoomedImageHeight - qImageZoomedImage->height();
+        QSize zoomedImageChanged = lastZoomedImageSize - qImageZoomedImage->size();
 
         // 根据光标在图像的位置进行调整左上绘图点位置
-        drawImageTopLeftPos += QPoint(int(double(zoomedImageChangedWith)*double(cursorPosInImage.x())/double(qImageContainer->width()-1)),
-                                      int(double(zoomedImageChangedHeight)*double(cursorPosInImage.y())/double(qImageContainer->height()-1)));
+        drawImageTopLeftPos += QPoint(int(double(zoomedImageChanged.width())*double(cursorPosInImage.x())/double(qImageContainer->width()-1)),
+                                      int(double(zoomedImageChanged.height())*double(cursorPosInImage.y())/double(qImageContainer->height()-1)));
 
         drawImageTopLeftLastPos = drawImageTopLeftPos;
 
@@ -443,7 +439,7 @@ void ImageWidget::updateZoomedImage()
 
 void ImageWidget::setDefaultParameters()
 {
-    zoomScaleX = zoomScaleY = 1.0;
+    zoomScale = 1.0;
 
     if(isEnableFitWidget && isLoadImage)
     {

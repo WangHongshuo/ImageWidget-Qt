@@ -77,14 +77,12 @@ private:
     QImage *qImageContainer = NULL;
     QImage *qImageZoomedImage = NULL;
 
-    int lastZoomedImageWidth;
-    int lastZoomedImageHeight;
+    QSize lastZoomedImageSize;
 
     double imageLeftTopRelativePosInWdigetX = 0.0;
     double imageLeftTopRelativePosInWdigetY = 0.0;
 
-    double zoomScaleX = 1.0;
-    double zoomScaleY = 1.0;
+    double zoomScale = 1.0;
 
     QPoint mouseLeftClickedPos;
     QPoint drawImageTopLeftLastPos = QPoint(0,0);

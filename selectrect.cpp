@@ -63,8 +63,7 @@ void SelectRect::mousePressEvent(QMouseEvent *event)
         {
         case Qt::LeftButton:
             mouseStatus = Qt::LeftButton;
-            mouseLeftClickedPosX = event->x();
-            mouseLeftClickedPosY = event->y();
+            mouseLeftClickedPos = event->pos();
             if(isCursorPosInSelectedAreaFlag)
                 this->setCursor(Qt::ClosedHandCursor);
             // 关闭鼠标追踪 节省资源
@@ -87,14 +86,14 @@ void SelectRect::mouseMoveEvent(QMouseEvent *event)
     {
         if(isCursorPosInSelectedAreaFlag)
         {
-            selectedRectInfo.x1 = lastSelectedRectInfo.x1+(event->x()-mouseLeftClickedPosX);
-            selectedRectInfo.y1 = lastSelectedRectInfo.y1+(event->y()-mouseLeftClickedPosY);
+            selectedRectInfo.x1 = lastSelectedRectInfo.x1+(event->x()-mouseLeftClickedPos.x());
+            selectedRectInfo.y1 = lastSelectedRectInfo.y1+(event->y()-mouseLeftClickedPos.y());
         }
         else
         {
             // 限定在mask内
-            selectedRectInfo.x1 = mouseLeftClickedPosX;
-            selectedRectInfo.y1 = mouseLeftClickedPosY;
+            selectedRectInfo.x1 = mouseLeftClickedPos.x();
+            selectedRectInfo.y1 = mouseLeftClickedPos.y();
             int x = event->x();
             int y = event->y();
             if(x < 0)
