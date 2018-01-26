@@ -7,8 +7,9 @@
 
 #include "selectrect.h"
 #include <iostream>
-#include <QDebug>
 #include <QCoreApplication>
+
+#include <QDebug>
 
 SelectRect::SelectRect(QWidget *parent) : QWidget(parent)
 {
@@ -64,7 +65,7 @@ void SelectRect::mousePressEvent(QMouseEvent *event)
             mouseStatus = Qt::LeftButton;
             mouseLeftClickedPosX = event->x();
             mouseLeftClickedPosY = event->y();
-            if(isCursorInSelectedArea)
+            if(isCursorPosInSelectedAreaFlag)
                 this->setCursor(Qt::ClosedHandCursor);
             // 关闭鼠标追踪 节省资源
             this->setMouseTracking(false);
@@ -84,7 +85,7 @@ void SelectRect::mouseMoveEvent(QMouseEvent *event)
 {
     if (mouseStatus == Qt::LeftButton )
     {
-        if(isCursorInSelectedArea)
+        if(isCursorPosInSelectedAreaFlag)
         {
             selectedRectInfo.x1 = lastSelectedRectInfo.x1+(event->x()-mouseLeftClickedPosX);
             selectedRectInfo.y1 = lastSelectedRectInfo.y1+(event->y()-mouseLeftClickedPosY);
@@ -115,12 +116,12 @@ void SelectRect::mouseMoveEvent(QMouseEvent *event)
         if(isCursorPosInSelectedArea(selectedRectInfo,event->pos()))
         {
             this->setCursor(Qt::OpenHandCursor);
-            isCursorInSelectedArea = true;
+            isCursorPosInSelectedAreaFlag = true;
         }
         else
         {
             this->setCursor(Qt::ArrowCursor);
-            isCursorInSelectedArea = false;
+            isCursorPosInSelectedAreaFlag = false;
         }
     }
 }
@@ -190,6 +191,8 @@ void SelectRect::selectReset()
     selectedRectInfo.clear();
     // 关闭鼠标追踪 节省资源
     this->setMouseTracking(false);
+    this->setCursor(Qt::ArrowCursor);
+    isCursorPosInSelectedAreaFlag = false;
     update();
 }
 

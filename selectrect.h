@@ -87,7 +87,6 @@ private slots:
     void cropOriginalImage();
 
 private:
-
     void paintEvent(QPaintEvent *event);
     void mousePressEvent(QMouseEvent *event);
     void mouseMoveEvent(QMouseEvent *event);
@@ -114,7 +113,7 @@ private:
     QImage* image = NULL;
     QImage *zoomedImage = NULL;
     bool isLoadImage = false;
-    bool isCursorInSelectedArea = false;
+    bool isCursorPosInSelectedAreaFlag = false;
 };
 
 #endif // SELECTRECT_H

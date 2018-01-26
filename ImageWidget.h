@@ -58,7 +58,7 @@ private:
     void updateZoomedImage();
     void imageZoomOut();
     void imageZoomIn();
-    void getDrawImageTopLeftPos(int x,int y);
+    void getDrawImageTopLeftPos(QPoint xy);
     void initializeContextmenu();
     void emitLeftClickedSignals(QMouseEvent *e);
     QPoint calculateCursorPosInImage(const QImage *originalImage, const QImage *zoomedImage, const QPoint &imageLeftTopPos, QPoint cursorPos);
@@ -86,13 +86,10 @@ private:
     double zoomScaleX = 1.0;
     double zoomScaleY = 1.0;
 
-    int mouseLeftClickedPosX;
-    int mouseLeftClickedPosY;
+    QPoint mouseLeftClickedPos;
+    QPoint drawImageTopLeftLastPos = QPoint(0,0);
+    QPoint drawImageTopLeftPos = QPoint(0,0);
 
-    int drawImageTopLeftLastPosX = 0;
-    int drawImageTopLeftLastPosY = 0;
-    int drawImageTopLeftPosX = 0;
-    int drawImageTopLeftPosY = 0;
     // status flags
     bool isLoadImage = false;
     bool isSelectMode = false;
