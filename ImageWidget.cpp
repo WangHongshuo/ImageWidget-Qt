@@ -183,8 +183,8 @@ void ImageWidget::mouseReleaseEvent(QMouseEvent *e)
             // 记录上次图像顶点
             drawImageTopLeftLastPos = drawImageTopLeftPos;
             calculateImageLeftTopRelativePosInWidget(drawImageTopLeftPos.x(),drawImageTopLeftPos.y(),
-                                                     imageLeftTopRelativePosInWdigetX,
-                                                     imageLeftTopRelativePosInWdigetY);
+                                                     imageTopLeftRelativePosInWdigetX,
+                                                     imageTopLeftRelativePosInWdigetY);
             // 释放后鼠标状态置No
             mouseStatus = Qt::NoButton;
         }
@@ -247,8 +247,8 @@ void ImageWidget::resizeEvent(QResizeEvent *event)
         }
         else
         {
-            drawImageTopLeftPos.setX(int(double(this->width())*imageLeftTopRelativePosInWdigetX));
-            drawImageTopLeftPos.setY(int(double(this->height())*imageLeftTopRelativePosInWdigetY));
+            drawImageTopLeftPos.setX(int(double(this->width())*imageTopLeftRelativePosInWdigetX));
+            drawImageTopLeftPos.setY(int(double(this->height())*imageTopLeftRelativePosInWdigetY));
             drawImageTopLeftLastPos = drawImageTopLeftPos;
         }
     }
@@ -431,8 +431,8 @@ void ImageWidget::updateZoomedImage()
         drawImageTopLeftLastPos = drawImageTopLeftPos;
 
         calculateImageLeftTopRelativePosInWidget(drawImageTopLeftPos.x(),drawImageTopLeftPos.y(),
-                                                 imageLeftTopRelativePosInWdigetX,
-                                                 imageLeftTopRelativePosInWdigetY);
+                                                 imageTopLeftRelativePosInWdigetX,
+                                                 imageTopLeftRelativePosInWdigetY);
         isZoomedParametersChanged = false;
     }
 }
@@ -447,14 +447,14 @@ void ImageWidget::setDefaultParameters()
         updateZoomedImage();
         setImageInCenter();
         calculateImageLeftTopRelativePosInWidget(drawImageTopLeftPos.x(),drawImageTopLeftPos.y(),
-                                                 imageLeftTopRelativePosInWdigetX,
-                                                 imageLeftTopRelativePosInWdigetY);
+                                                 imageTopLeftRelativePosInWdigetX,
+                                                 imageTopLeftRelativePosInWdigetY);
     }
     else
     {
         drawImageTopLeftPos = drawImageTopLeftLastPos = QPoint(0,0);
-        imageLeftTopRelativePosInWdigetX = 0.0;
-        imageLeftTopRelativePosInWdigetY = 0.0;
+        imageTopLeftRelativePosInWdigetX = 0.0;
+        imageTopLeftRelativePosInWdigetY = 0.0;
     }
 }
 

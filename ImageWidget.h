@@ -79,8 +79,8 @@ private:
 
     QSize lastZoomedImageSize;
 
-    double imageLeftTopRelativePosInWdigetX = 0.0;
-    double imageLeftTopRelativePosInWdigetY = 0.0;
+    double imageTopLeftRelativePosInWdigetX = 0.0;
+    double imageTopLeftRelativePosInWdigetY = 0.0;
 
     double zoomScale = 1.0;
 

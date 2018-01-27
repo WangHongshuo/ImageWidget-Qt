@@ -48,13 +48,13 @@ void SelectRect::paintEvent(QPaintEvent *event)
     // 椭圆
 //    QRect boundingRectangle(rect.x,rect.y,rect.w,rect.h);
 //    select_area.addEllipse(boundingRectangle);
-    selectArea.addRect(selectedRectInfo.x1,selectedRectInfo.y1,selectedRectInfo.w,selectedRectInfo.h);
+    selectArea.addRect(selectedRect.x(),selectedRect.y(),selectedRect.width(),selectedRect.height());
     mask.addRect(this->geometry());
     QPainterPath drawMask =mask.subtracted(selectArea);
     QPainter painter(this);
     painter.setPen(QPen(QColor(0, 140, 255, 255), 1));
     painter.fillPath(drawMask,QBrush(QColor(0,0,0,160)));
-    painter.drawRect(QRect(selectedRectInfo.x1,selectedRectInfo.y1,selectedRectInfo.w,selectedRectInfo.h));
+    painter.drawRect(selectedRect);
 }
 
 void SelectRect::mousePressEvent(QMouseEvent *event)
@@ -86,14 +86,12 @@ void SelectRect::mouseMoveEvent(QMouseEvent *event)
     {
         if(isCursorPosInSelectedAreaFlag)
         {
-            selectedRectInfo.x1 = lastSelectedRectInfo.x1+(event->x()-mouseLeftClickedPos.x());
-            selectedRectInfo.y1 = lastSelectedRectInfo.y1+(event->y()-mouseLeftClickedPos.y());
+            selectedRect.moveTo(lastSelectedRect.topLeft()+event->pos()-mouseLeftClickedPos);
         }
         else
         {
             // 限定在mask内
-            selectedRectInfo.x1 = mouseLeftClickedPos.x();
-            selectedRectInfo.y1 = mouseLeftClickedPos.y();
+            selectedRect.setTopLeft(mouseLeftClickedPos);
             int x = event->x();
             int y = event->y();
             if(x < 0)
@@ -104,15 +102,15 @@ void SelectRect::mouseMoveEvent(QMouseEvent *event)
                 y = 0;
             else if (y > this->height())
                 y = this->height();
-            selectedRectInfo.w = x - selectedRectInfo.x1;
-            selectedRectInfo.h = y - selectedRectInfo.y1;
+            selectedRect.setWidth(x-selectedRect.x());
+            selectedRect.setHeight(y-selectedRect.y());
         }
         update();
     }
     // 判断鼠标是否在矩形框内
     if(mouseStatus == Qt::NoButton)
     {
-        if(isCursorPosInSelectedArea(selectedRectInfo,event->pos()))
+        if(selectedRect.contains(event->pos()))
         {
             this->setCursor(Qt::OpenHandCursor);
             isCursorPosInSelectedAreaFlag = true;
@@ -128,9 +126,9 @@ void SelectRect::mouseMoveEvent(QMouseEvent *event)
 void SelectRect::mouseReleaseEvent(QMouseEvent *event)
 {
     // 修正RectInfo::w和RectInfo::h为正
-    fixRectInfo(selectedRectInfo);
+    fixRectInfo(selectedRect);
     // 备份
-    lastSelectedRectInfo = selectedRectInfo;
+    lastSelectedRect = selectedRect;
     mouseStatus = Qt::NoButton;
     // 开启鼠标追踪
     this->setMouseTracking(true);
@@ -143,40 +141,30 @@ void SelectRect::contextMenuEvent(QContextMenuEvent *event)
     mouseStatus = Qt::NoButton;
 }
 
-RectInfo SelectRect::calculateRectInfoInImage(const QImage *img, const QPoint &leftTopPos, RectInfo rect)
+QRect SelectRect::calculateRectInImage(const QImage *img, const QPoint &imgTopLeftPos, QRect rect)
 {
-    RectInfo returnRectInfo;
+    QRect returnRect;
 
     // 计算相对于图像内的坐标
-    returnRectInfo.x1 = rect.x1 - leftTopPos.x();
-    returnRectInfo.y1 = rect.y1 - leftTopPos.y();
-    returnRectInfo.w = rect.w;
-    returnRectInfo.h = rect.h;
-    // 限定截取范围在图像内 修正顶点
-    if(returnRectInfo.x1 < 0)
-    {
-        returnRectInfo.w = rect.w + returnRectInfo.x1;
-        returnRectInfo.x1 = 0;
-    }
-    if (returnRectInfo.y1 < 0)
-    {
-        returnRectInfo.h = rect.h + returnRectInfo.y1;
-        returnRectInfo.y1 = 0;
-    }
-    if(returnRectInfo.x1 + rect.w > img->width())
-        returnRectInfo.w = img->width() - returnRectInfo.x1;
-    if(returnRectInfo.y1 + rect.h > img->height())
-        returnRectInfo.h = img->height() - returnRectInfo.y1;
-    return returnRectInfo;
-}
+    returnRect.setTopLeft(rect.topLeft()-imgTopLeftPos);
+    returnRect.setSize(rect.size());
 
-bool SelectRect::isCursorPosInSelectedArea(const RectInfo &rect,QPoint cursorPos)
-{ 
-    if(rect.x1-cursorPos.x() < 0 && rect.x2()-cursorPos.x() > 0 &&
-       rect.y1-cursorPos.y() < 0 && rect.y2()-cursorPos.y() > 0)
-       return true;
-    else
-       return false;
+    // 限定截取范围在图像内 修正顶点
+    if(returnRect.x() < 0)
+    {
+        returnRect.setWidth(rect.width()+returnRect.x());
+        returnRect.setX(0);
+    }
+    if (returnRect.y() < 0)
+    {
+        returnRect.setHeight(rect.height()+returnRect.y());
+        returnRect.setY(0);
+    }
+    if(returnRect.bottomRight().x() > img->width())
+        returnRect.setLeft(img->width());
+    if(returnRect.bottomRight().y() > img->height())
+        returnRect.setBottom(img->height());
+    return returnRect;
 }
 
 void SelectRect::selectExit()
@@ -187,7 +175,8 @@ void SelectRect::selectExit()
 
 void SelectRect::selectReset()
 {
-    selectedRectInfo.clear();
+    selectedRect = QRect(0,0,0,0);
+    lastSelectedRect = QRect(0,0,0,0);
     // 关闭鼠标追踪 节省资源
     this->setMouseTracking(false);
     this->setCursor(Qt::ArrowCursor);
@@ -197,30 +186,30 @@ void SelectRect::selectReset()
 
 void SelectRect::cropZoomedImage()
 {
-    fixedRectInfoInImage = calculateRectInfoInImage(zoomedImage,drawImageTopLeftPos,selectedRectInfo);
-    saveImage(zoomedImage,fixedRectInfoInImage);
+    fixedRectInImage = calculateRectInImage(zoomedImage,drawImageTopLeftPos,selectedRect);
+    saveImage(zoomedImage,fixedRectInImage);
 }
 
 void SelectRect::cropOriginalImage()
 {
-    fixedRectInfoInImage = calculateRectInfoInImage(zoomedImage,drawImageTopLeftPos,selectedRectInfo);
-    int x2 = fixedRectInfoInImage.x1 + fixedRectInfoInImage.w;
-    int y2 = fixedRectInfoInImage.y1 + fixedRectInfoInImage.h;
-    fixedRectInfoInImage.x1 = int(round(double(fixedRectInfoInImage.x1)/double(zoomedImage->width())*double(image->width())));
-    fixedRectInfoInImage.y1 = int(round(double(fixedRectInfoInImage.y1)/double(zoomedImage->height())*double(image->height())));
-    fixedRectInfoInImage.w = int(round(double(x2)/double(zoomedImage->width())*double(image->width())))-fixedRectInfoInImage.x1;
-    fixedRectInfoInImage.h = int(round(double(y2)/double(zoomedImage->height())*double(image->height())))-fixedRectInfoInImage.y1;
-    saveImage(image,fixedRectInfoInImage);
+    fixedRectInImage = calculateRectInImage(zoomedImage,drawImageTopLeftPos,selectedRect);
+    int x2 = fixedRectInImage.bottomRight().x();
+    int y2 = fixedRectInImage.bottomRight().y();
+    fixedRectInImage.setX(int(round(double(fixedRectInImage.x())/double(zoomedImage->width())*double(image->width()))));
+    fixedRectInImage.setY(int(round(double(fixedRectInImage.y())/double(zoomedImage->height())*double(image->height()))));
+    fixedRectInImage.setWidth(int(round(double(x2)/double(zoomedImage->width())*double(image->width())))-fixedRectInImage.x());
+    fixedRectInImage.setHeight(int(round(double(y2)/double(zoomedImage->height())*double(image->height())))-fixedRectInImage.y());
+    saveImage(image,fixedRectInImage);
 }
 
-void SelectRect::saveImage(const QImage *img,RectInfo rect)
+void SelectRect::saveImage(const QImage *img, QRect rect)
 {
     // 接受到截取框信息
     if(isLoadImage)
     {
-        if(rect.w > 0 && rect.h > 0)
+        if(rect.width() > 0 && rect.height() > 0)
         {
-            QImage saveImageTemp = img->copy(rect.x1,rect.y1,rect.w,rect.h);
+            QImage saveImageTemp = img->copy(rect);
             QString filename = QFileDialog::getSaveFileName(this, tr("Save File"),
                                                             QCoreApplication::applicationDirPath(),
                                                             tr("Images (*.png *.xpm *.jpg *.tiff *.bmp)"));
@@ -240,17 +229,17 @@ void SelectRect::saveImage(const QImage *img,RectInfo rect)
     }
 }
 
-void SelectRect::fixRectInfo(RectInfo &rect)
+void SelectRect::fixRectInfo(QRect &rect)
 {
-    if(rect.w < 0)
+    if(rect.width() < 0)
     {
-        rect.x1 += rect.w;
-        rect.w = -rect.w;
+        rect.setWidth(-rect.width());
+        rect.setX(rect.x()-rect.width());
     }
-    if(rect.h < 0)
+    if(rect.height() < 0)
     {
-        rect.y1 += rect.h;
-        rect.h = -rect.h;
+        rect.setHeight(-rect.height());
+        rect.setY(rect.y()-rect.height());
     }
 }
 

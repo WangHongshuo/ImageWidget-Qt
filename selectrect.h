@@ -18,43 +18,6 @@
 #include <QSplitter>
 #include "ImageWidget.h"
 
-
-class RectInfo
-{
-public :
-    RectInfo(int x, int y, int width, int height)
-    {
-        x1 = x;
-        y1 = y;
-        w = width;
-        h = height;
-    }
-    RectInfo()
-    {
-
-    }
-    ~RectInfo()
-    {
-
-    }
-    int x1 = 0;
-    int y1 = 0;
-    int w = 0;
-    int h = 0;
-    int x2() const
-    {
-        return x1+w;
-    }
-    int y2() const
-    {
-        return y1+h;
-    }
-    void clear()
-    {
-        x1 = y1 = w = h = 0;
-    }
-};
-
 class SelectRect : public QWidget
 {
     Q_OBJECT
@@ -92,10 +55,9 @@ private:
     void mouseMoveEvent(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);
     void contextMenuEvent(QContextMenuEvent *event);
-    void saveImage(const QImage *img, RectInfo rect);
-    void fixRectInfo(RectInfo &rect);
-    RectInfo calculateRectInfoInImage(const QImage *img, const QPoint &leftTopPos, RectInfo rect);
-    bool isCursorPosInSelectedArea(const RectInfo &rect, QPoint cursorPos);
+    void saveImage(const QImage *img, QRect rect);
+    void fixRectInfo(QRect &rect);
+    QRect calculateRectInImage(const QImage *img, const QPoint &imgTopLeftPos, QRect rect);
 
     QMenu *mMenu = NULL;
     QAction *mActionReset = NULL;
@@ -103,10 +65,11 @@ private:
     QAction *mActionSaveOriginalImage = NULL;
     QAction *mActionExit = NULL;
     // Widget中选中的范围
-    RectInfo selectedRectInfo;
-    RectInfo lastSelectedRectInfo;
+    QRect selectedRect;
+    QRect lastSelectedRect;
     // Image中选中的范围
-    RectInfo fixedRectInfoInImage;
+    QRect fixedRectInImage;
+
     QPoint mouseLeftClickedPos = QPoint(0,0);
     int mouseStatus;
     QImage* image = NULL;
