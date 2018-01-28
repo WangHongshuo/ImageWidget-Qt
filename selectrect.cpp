@@ -144,26 +144,27 @@ void SelectRect::contextMenuEvent(QContextMenuEvent *event)
 QRect SelectRect::calculateRectInImage(const QImage *img, const QPoint &imgTopLeftPos, QRect rect)
 {
     QRect returnRect;
-
+    // QRect::width(height) = QRect::left(top)-QRect::right(bottom)
     // 计算相对于图像内的坐标
     returnRect.setTopLeft(rect.topLeft()-imgTopLeftPos);
     returnRect.setSize(rect.size());
-
     // 限定截取范围在图像内 修正顶点
     if(returnRect.x() < 0)
     {
-        returnRect.setWidth(rect.width()+returnRect.x());
+        // QRect::setX change the width
         returnRect.setX(0);
     }
     if (returnRect.y() < 0)
     {
-        returnRect.setHeight(rect.height()+returnRect.y());
+        // QRect::setY change the height
         returnRect.setY(0);
     }
-    if(returnRect.bottomRight().x() > img->width())
-        returnRect.setLeft(img->width());
-    if(returnRect.bottomRight().y() > img->height())
-        returnRect.setBottom(img->height());
+    if(returnRect.bottomRight().x() >= img->width())
+        // QRect::setRight change the width
+        returnRect.setRight(img->width()-1);
+    if(returnRect.bottomRight().y() >= img->height())
+        // Qrect::setBottom change the height
+        returnRect.setBottom(img->height()-1);
     return returnRect;
 }
 
