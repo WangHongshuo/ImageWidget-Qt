@@ -58,14 +58,17 @@ private:
     void saveImage(const QImage *img, QRect rect);
     void fixRectInfo(QRect &rect);
     QRect calculateRectInImage(const QImage *img, const QPoint &imgTopLeftPos, QRect rect);
+    void calculateEdgeRect();
 
     QMenu *mMenu = NULL;
     QAction *mActionReset = NULL;
     QAction *mActionSaveZoomedImage = NULL;
     QAction *mActionSaveOriginalImage = NULL;
     QAction *mActionExit = NULL;
+    enum{SR_CENTER,SR_TOPLEFT,SR_TOPRIGHT,SR_BOTTOMRIGHT,SR_BOTTOMLEFT,
+         SR_TOP,SR_RIGHT,SR_BOTTOM,SR_LEFT};
     // Widget中选中的范围
-    QRect selectedRect;
+    QRect selectedRect[9];
     QRect lastSelectedRect;
     // Image中选中的范围
     QRect fixedRectInImage;

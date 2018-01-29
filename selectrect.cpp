@@ -48,13 +48,13 @@ void SelectRect::paintEvent(QPaintEvent *event)
     // 椭圆
 //    QRect boundingRectangle(rect.x,rect.y,rect.w,rect.h);
 //    select_area.addEllipse(boundingRectangle);
-    selectArea.addRect(selectedRect.x(),selectedRect.y(),selectedRect.width(),selectedRect.height());
+    selectArea.addRect(selectedRect[SR_CENTER].x(),selectedRect[SR_CENTER].y(),selectedRect[SR_CENTER].width(),selectedRect[SR_CENTER].height());
     mask.addRect(this->geometry());
     QPainterPath drawMask =mask.subtracted(selectArea);
     QPainter painter(this);
     painter.setPen(QPen(QColor(0, 140, 255, 255), 1));
     painter.fillPath(drawMask,QBrush(QColor(0,0,0,160)));
-    painter.drawRect(selectedRect);
+    painter.drawRect(selectedRect[SR_CENTER]);
 }
 
 void SelectRect::mousePressEvent(QMouseEvent *event)
@@ -86,12 +86,12 @@ void SelectRect::mouseMoveEvent(QMouseEvent *event)
     {
         if(isCursorPosInSelectedAreaFlag)
         {
-            selectedRect.moveTo(lastSelectedRect.topLeft()+event->pos()-mouseLeftClickedPos);
+            selectedRect[SR_CENTER].moveTo(lastSelectedRect.topLeft()+event->pos()-mouseLeftClickedPos);
         }
         else
         {
             // 限定在mask内
-            selectedRect.setTopLeft(mouseLeftClickedPos);
+            selectedRect[SR_CENTER].setTopLeft(mouseLeftClickedPos);
             int x = event->x();
             int y = event->y();
             if(x < 0)
@@ -102,15 +102,15 @@ void SelectRect::mouseMoveEvent(QMouseEvent *event)
                 y = 0;
             else if (y > this->height())
                 y = this->height();
-            selectedRect.setWidth(x-selectedRect.x());
-            selectedRect.setHeight(y-selectedRect.y());
+            selectedRect[SR_CENTER].setWidth(x-selectedRect[SR_CENTER].x());
+            selectedRect[SR_CENTER].setHeight(y-selectedRect[SR_CENTER].y());
         }
         update();
     }
     // 判断鼠标是否在矩形框内
     if(mouseStatus == Qt::NoButton)
     {
-        if(selectedRect.contains(event->pos()))
+        if(selectedRect[SR_CENTER].contains(event->pos()))
         {
             this->setCursor(Qt::OpenHandCursor);
             isCursorPosInSelectedAreaFlag = true;
@@ -126,10 +126,12 @@ void SelectRect::mouseMoveEvent(QMouseEvent *event)
 void SelectRect::mouseReleaseEvent(QMouseEvent *event)
 {
     // 修正RectInfo::w和RectInfo::h为正
-    fixRectInfo(selectedRect);
+    fixRectInfo(selectedRect[SR_CENTER]);
+    qDebug() << selectedRect[SR_CENTER];
     // 备份
-    lastSelectedRect = selectedRect;
+    lastSelectedRect = selectedRect[SR_CENTER];
     mouseStatus = Qt::NoButton;
+    calculateEdgeRect();
     // 开启鼠标追踪
     this->setMouseTracking(true);
     this->setCursor(Qt::OpenHandCursor);
@@ -168,6 +170,35 @@ QRect SelectRect::calculateRectInImage(const QImage *img, const QPoint &imgTopLe
     return returnRect;
 }
 
+void SelectRect::calculateEdgeRect()
+{
+    int w = 2;
+
+    selectedRect[SR_TOPLEFT].setTopLeft(selectedRect[SR_CENTER].topLeft()-QPoint(w,w));
+    selectedRect[SR_TOPLEFT].setBottomRight(selectedRect[SR_CENTER].topLeft()+QPoint(w,w));
+
+    selectedRect[SR_TOPRIGHT].setTopLeft(selectedRect[SR_CENTER].topRight()-QPoint(w,w));
+    selectedRect[SR_TOPRIGHT].setBottomRight(selectedRect[SR_CENTER].topRight()+QPoint(w,w));
+
+    selectedRect[SR_BOTTOMRIGHT].setTopLeft(selectedRect[SR_CENTER].bottomRight()-QPoint(w,w));
+    selectedRect[SR_BOTTOMRIGHT].setBottomRight(selectedRect[SR_CENTER].bottomRight()+QPoint(w,w));
+
+    selectedRect[SR_BOTTOMLEFT].setTopLeft(selectedRect[SR_CENTER].bottomLeft()-QPoint(w,w));
+    selectedRect[SR_BOTTOMLEFT].setBottomRight(selectedRect[SR_CENTER].bottomLeft()+QPoint(w,w));
+
+    selectedRect[SR_TOP].setTopLeft(selectedRect[SR_TOPLEFT].topRight());
+    selectedRect[SR_TOP].setBottomRight(selectedRect[SR_TOPLEFT].bottomLeft());
+
+    selectedRect[SR_RIGHT].setTopLeft(selectedRect[SR_TOPRIGHT].bottomLeft());
+    selectedRect[SR_RIGHT].setBottomRight(selectedRect[SR_BOTTOMRIGHT].bottomRight());
+
+    selectedRect[SR_BOTTOM].setTopLeft(selectedRect[SR_BOTTOMLEFT].topRight());
+    selectedRect[SR_BOTTOM].setBottomRight(selectedRect[SR_BOTTOMRIGHT].bottomLeft());
+
+    selectedRect[SR_LEFT].setTopLeft(selectedRect[SR_TOPLEFT].bottomLeft());
+    selectedRect[SR_LEFT].setBottomRight(selectedRect[SR_BOTTOMLEFT].topRight());
+}
+
 void SelectRect::selectExit()
 {
     emit sendSelectModeExit();
@@ -176,7 +207,7 @@ void SelectRect::selectExit()
 
 void SelectRect::selectReset()
 {
-    selectedRect = QRect(0,0,0,0);
+    selectedRect[SR_CENTER] = QRect(0,0,0,0);
     lastSelectedRect = QRect(0,0,0,0);
     // 关闭鼠标追踪 节省资源
     this->setMouseTracking(false);
@@ -187,13 +218,13 @@ void SelectRect::selectReset()
 
 void SelectRect::cropZoomedImage()
 {
-    fixedRectInImage = calculateRectInImage(zoomedImage,drawImageTopLeftPos,selectedRect);
+    fixedRectInImage = calculateRectInImage(zoomedImage,drawImageTopLeftPos,selectedRect[SR_CENTER]);
     saveImage(zoomedImage,fixedRectInImage);
 }
 
 void SelectRect::cropOriginalImage()
 {
-    fixedRectInImage = calculateRectInImage(zoomedImage,drawImageTopLeftPos,selectedRect);
+    fixedRectInImage = calculateRectInImage(zoomedImage,drawImageTopLeftPos,selectedRect[SR_CENTER]);
     int x2 = fixedRectInImage.bottomRight().x();
     int y2 = fixedRectInImage.bottomRight().y();
     fixedRectInImage.setX(int(round(double(fixedRectInImage.x())/double(zoomedImage->width())*double(image->width()))));
@@ -232,16 +263,21 @@ void SelectRect::saveImage(const QImage *img, QRect rect)
 
 void SelectRect::fixRectInfo(QRect &rect)
 {
-    if(rect.width() < 0)
+    QPoint topLeft = rect.topLeft();
+    int width = rect.width();
+    int height = rect.height();
+    if(width < 0)
     {
-        rect.setWidth(-rect.width());
-        rect.setX(rect.x()-rect.width());
+        topLeft.setX(topLeft.x()+width);
+        width = -width;
     }
-    if(rect.height() < 0)
+    if(height < 0)
     {
-        rect.setHeight(-rect.height());
-        rect.setY(rect.y()-rect.height());
+        topLeft.setY(topLeft.y()+height);
+        height = -height;
     }
+    rect.setTopLeft(topLeft);
+    rect.setSize(QSize(width,height));
 }
 
 void SelectRect::receiveParentSizeChangedValue(int width, int height, int imageLeftTopPosX, int imageLeftTopPosY)
