@@ -55,6 +55,11 @@ void SelectRect::paintEvent(QPaintEvent *event)
     painter.setPen(QPen(QColor(0, 140, 255, 255), 1));
     painter.fillPath(drawMask,QBrush(QColor(0,0,0,160)));
     painter.drawRect(selectedRect[SR_CENTER]);
+    if(isSelectedRectStable)
+    {
+    for(int i=1;i<5;i++)
+        painter.fillRect(selectedRect[i],QBrush(QColor(0,140,255,255)));
+    }
 }
 
 void SelectRect::mousePressEvent(QMouseEvent *event)
@@ -64,7 +69,7 @@ void SelectRect::mousePressEvent(QMouseEvent *event)
         case Qt::LeftButton:
             mouseStatus = Qt::LeftButton;
             mouseLeftClickedPos = event->pos();
-            if(isCursorPosInSelectedAreaFlag)
+            if(cursorPosInSelectedArea == SR_CENTER)
                 this->setCursor(Qt::ClosedHandCursor);
             // 关闭鼠标追踪 节省资源
             this->setMouseTracking(false);
@@ -84,8 +89,10 @@ void SelectRect::mouseMoveEvent(QMouseEvent *event)
 {
     if (mouseStatus == Qt::LeftButton )
     {
-        if(isCursorPosInSelectedAreaFlag)
+        isSelectedRectStable = false;
+        if(cursorPosInSelectedArea == SR_CENTER)
         {
+
             selectedRect[SR_CENTER].moveTo(lastSelectedRect.topLeft()+event->pos()-mouseLeftClickedPos);
         }
         else
@@ -104,21 +111,22 @@ void SelectRect::mouseMoveEvent(QMouseEvent *event)
                 y = this->height();
             selectedRect[SR_CENTER].setWidth(x-selectedRect[SR_CENTER].x());
             selectedRect[SR_CENTER].setHeight(y-selectedRect[SR_CENTER].y());
+            fixRectInfo(selectedRect[SR_CENTER]);
+            calculateEdgeRect();
         }
         update();
     }
     // 判断鼠标是否在矩形框内
     if(mouseStatus == Qt::NoButton)
     {
-        if(selectedRect[SR_CENTER].contains(event->pos()))
+        if(selectedRect[SR_ENTIRETY].contains(event->pos()))
         {
-            this->setCursor(Qt::OpenHandCursor);
-            isCursorPosInSelectedAreaFlag = true;
+            cursorPosInSelectedArea = getSelectedAreaSubscript(event->pos());
         }
         else
         {
+            cursorPosInSelectedArea = SR_NULL;
             this->setCursor(Qt::ArrowCursor);
-            isCursorPosInSelectedAreaFlag = false;
         }
     }
 }
@@ -127,11 +135,12 @@ void SelectRect::mouseReleaseEvent(QMouseEvent *event)
 {
     // 修正RectInfo::w和RectInfo::h为正
     fixRectInfo(selectedRect[SR_CENTER]);
-    qDebug() << selectedRect[SR_CENTER];
     // 备份
     lastSelectedRect = selectedRect[SR_CENTER];
     mouseStatus = Qt::NoButton;
     calculateEdgeRect();
+    isSelectedRectStable = true;
+    update();
     // 开启鼠标追踪
     this->setMouseTracking(true);
     this->setCursor(Qt::OpenHandCursor);
@@ -172,31 +181,86 @@ QRect SelectRect::calculateRectInImage(const QImage *img, const QPoint &imgTopLe
 
 void SelectRect::calculateEdgeRect()
 {
-    int w = 2;
+    // 边框宽
+    int w = 4;
 
     selectedRect[SR_TOPLEFT].setTopLeft(selectedRect[SR_CENTER].topLeft()-QPoint(w,w));
-    selectedRect[SR_TOPLEFT].setBottomRight(selectedRect[SR_CENTER].topLeft()+QPoint(w,w));
+    selectedRect[SR_TOPLEFT].setBottomRight(selectedRect[SR_CENTER].topLeft());
 
-    selectedRect[SR_TOPRIGHT].setTopLeft(selectedRect[SR_CENTER].topRight()-QPoint(w,w));
-    selectedRect[SR_TOPRIGHT].setBottomRight(selectedRect[SR_CENTER].topRight()+QPoint(w,w));
+    selectedRect[SR_TOPRIGHT].setTopLeft(selectedRect[SR_CENTER].topRight()-QPoint(0,w));
+    selectedRect[SR_TOPRIGHT].setBottomRight(selectedRect[SR_CENTER].topRight()+QPoint(w,0));
 
-    selectedRect[SR_BOTTOMRIGHT].setTopLeft(selectedRect[SR_CENTER].bottomRight()-QPoint(w,w));
+    selectedRect[SR_BOTTOMRIGHT].setTopLeft(selectedRect[SR_CENTER].bottomRight());
     selectedRect[SR_BOTTOMRIGHT].setBottomRight(selectedRect[SR_CENTER].bottomRight()+QPoint(w,w));
 
-    selectedRect[SR_BOTTOMLEFT].setTopLeft(selectedRect[SR_CENTER].bottomLeft()-QPoint(w,w));
-    selectedRect[SR_BOTTOMLEFT].setBottomRight(selectedRect[SR_CENTER].bottomLeft()+QPoint(w,w));
+    selectedRect[SR_BOTTOMLEFT].setTopLeft(selectedRect[SR_CENTER].bottomLeft()-QPoint(w,0));
+    selectedRect[SR_BOTTOMLEFT].setBottomRight(selectedRect[SR_CENTER].bottomLeft()+QPoint(0,w));
 
     selectedRect[SR_TOP].setTopLeft(selectedRect[SR_TOPLEFT].topRight());
-    selectedRect[SR_TOP].setBottomRight(selectedRect[SR_TOPLEFT].bottomLeft());
+    selectedRect[SR_TOP].setBottomRight(selectedRect[SR_TOPRIGHT].bottomLeft());
 
     selectedRect[SR_RIGHT].setTopLeft(selectedRect[SR_TOPRIGHT].bottomLeft());
-    selectedRect[SR_RIGHT].setBottomRight(selectedRect[SR_BOTTOMRIGHT].bottomRight());
+    selectedRect[SR_RIGHT].setBottomRight(selectedRect[SR_BOTTOMRIGHT].topRight());
 
     selectedRect[SR_BOTTOM].setTopLeft(selectedRect[SR_BOTTOMLEFT].topRight());
     selectedRect[SR_BOTTOM].setBottomRight(selectedRect[SR_BOTTOMRIGHT].bottomLeft());
 
     selectedRect[SR_LEFT].setTopLeft(selectedRect[SR_TOPLEFT].bottomLeft());
     selectedRect[SR_LEFT].setBottomRight(selectedRect[SR_BOTTOMLEFT].topRight());
+
+    selectedRect[SR_ENTIRETY].setTopLeft(selectedRect[SR_TOPLEFT].topLeft());
+    selectedRect[SR_ENTIRETY].setBottomRight(selectedRect[SR_BOTTOMRIGHT].bottomRight());
+}
+
+int SelectRect::getSelectedAreaSubscript(QPoint cursorPos)
+{
+    // 可用树结构减少if
+    if(selectedRect[SR_CENTER].contains(cursorPos,true))
+    {
+        this->setCursor(Qt::OpenHandCursor);
+        return SR_CENTER;
+    }
+    if(selectedRect[SR_TOPLEFT].contains(cursorPos))
+    {
+        this->setCursor(Qt::SizeFDiagCursor);
+        return SR_TOPLEFT;
+    }
+    if(selectedRect[SR_TOP].contains(cursorPos,true))
+    {
+        this->setCursor(Qt::SizeVerCursor);
+        return SR_TOP;
+    }
+    if(selectedRect[SR_TOPRIGHT].contains(cursorPos))
+    {
+        this->setCursor(Qt::SizeBDiagCursor);
+        return SR_TOPRIGHT;
+    }
+    if(selectedRect[SR_RIGHT].contains(cursorPos,true))
+    {
+        this->setCursor(Qt::SizeHorCursor);
+        return SR_RIGHT;
+    }
+    if(selectedRect[SR_BOTTOMRIGHT].contains(cursorPos))
+    {
+        this->setCursor(Qt::SizeFDiagCursor);
+        return SR_BOTTOMRIGHT;
+    }
+    if(selectedRect[SR_BOTTOM].contains(cursorPos,true))
+    {
+        this->setCursor(Qt::SizeVerCursor);
+        return SR_BOTTOM;
+    }
+    if(selectedRect[SR_BOTTOMLEFT].contains(cursorPos))
+    {
+        this->setCursor(Qt::SizeBDiagCursor);
+        return SR_BOTTOMLEFT;
+    }
+    if(selectedRect[SR_LEFT].contains(cursorPos,true))
+    {
+        this->setCursor(Qt::SizeHorCursor);
+        return SR_LEFT;
+    }
+    return SR_NULL;
 }
 
 void SelectRect::selectExit()
@@ -209,10 +273,11 @@ void SelectRect::selectReset()
 {
     selectedRect[SR_CENTER] = QRect(0,0,0,0);
     lastSelectedRect = QRect(0,0,0,0);
+    isSelectedRectStable = false;
     // 关闭鼠标追踪 节省资源
     this->setMouseTracking(false);
     this->setCursor(Qt::ArrowCursor);
-    isCursorPosInSelectedAreaFlag = false;
+    cursorPosInSelectedArea = SR_NULL;
     update();
 }
 

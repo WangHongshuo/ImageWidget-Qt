@@ -59,16 +59,17 @@ private:
     void fixRectInfo(QRect &rect);
     QRect calculateRectInImage(const QImage *img, const QPoint &imgTopLeftPos, QRect rect);
     void calculateEdgeRect();
+    int getSelectedAreaSubscript(QPoint cursorPos);
 
     QMenu *mMenu = NULL;
     QAction *mActionReset = NULL;
     QAction *mActionSaveZoomedImage = NULL;
     QAction *mActionSaveOriginalImage = NULL;
     QAction *mActionExit = NULL;
-    enum{SR_CENTER,SR_TOPLEFT,SR_TOPRIGHT,SR_BOTTOMRIGHT,SR_BOTTOMLEFT,
-         SR_TOP,SR_RIGHT,SR_BOTTOM,SR_LEFT};
+    enum{SR_NULL=-1,SR_CENTER,SR_TOPLEFT,SR_TOPRIGHT,SR_BOTTOMRIGHT,SR_BOTTOMLEFT,
+         SR_TOP,SR_RIGHT,SR_BOTTOM,SR_LEFT,SR_ENTIRETY};
     // Widget中选中的范围
-    QRect selectedRect[9];
+    QRect selectedRect[10];
     QRect lastSelectedRect;
     // Image中选中的范围
     QRect fixedRectInImage;
@@ -78,7 +79,8 @@ private:
     QImage* image = NULL;
     QImage *zoomedImage = NULL;
     bool isLoadImage = false;
-    bool isCursorPosInSelectedAreaFlag = false;
+    bool isSelectedRectStable = false;
+    int cursorPosInSelectedArea = SR_NULL;
 };
 
 #endif // SELECTRECT_H
