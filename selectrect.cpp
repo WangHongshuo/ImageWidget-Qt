@@ -113,7 +113,7 @@ void SelectRect::mouseReleaseEvent(QMouseEvent *event)
     // 备份
     lastSelectedRect = selectedRect[SR_CENTER];
     mouseStatus = Qt::NoButton;
-    calculateEdgeRect();
+    getEdgeRect();
     isSelectedRectStable = true;
     update();
     // 开启鼠标追踪
@@ -126,7 +126,7 @@ void SelectRect::contextMenuEvent(QContextMenuEvent *event)
     mouseStatus = Qt::NoButton;
 }
 
-QRect SelectRect::calculateRectInImage(const QImage *img, const QPoint &imgTopLeftPos, QRect rect)
+QRect SelectRect::getRectInImage(const QImage *img, const QPoint &imgTopLeftPos, QRect rect)
 {
     QRect returnRect;
     // QRect::width(height) = QRect::left(top)-QRect::right(bottom)
@@ -153,7 +153,7 @@ QRect SelectRect::calculateRectInImage(const QImage *img, const QPoint &imgTopLe
     return returnRect;
 }
 
-void SelectRect::calculateEdgeRect()
+void SelectRect::getEdgeRect()
 {
     // 边框宽
     int w = 4;
@@ -310,13 +310,13 @@ void SelectRect::selectReset()
 
 void SelectRect::cropZoomedImage()
 {
-    fixedRectInImage = calculateRectInImage(zoomedImage,drawImageTopLeftPos,selectedRect[SR_CENTER]);
+    fixedRectInImage = getRectInImage(zoomedImage,drawImageTopLeftPos,selectedRect[SR_CENTER]);
     saveImage(zoomedImage,fixedRectInImage);
 }
 
 void SelectRect::cropOriginalImage()
 {
-    fixedRectInImage = calculateRectInImage(zoomedImage,drawImageTopLeftPos,selectedRect[SR_CENTER]);
+    fixedRectInImage = getRectInImage(zoomedImage,drawImageTopLeftPos,selectedRect[SR_CENTER]);
     int x2 = fixedRectInImage.bottomRight().x();
     int y2 = fixedRectInImage.bottomRight().y();
     fixedRectInImage.setX(int(round(double(fixedRectInImage.x())/double(zoomedImage->width())*double(image->width()))));

@@ -57,8 +57,8 @@ private:
     void contextMenuEvent(QContextMenuEvent *event);
     void saveImage(const QImage *img, QRect rect);
     void fixRectInfo(QRect &rect);
-    QRect calculateRectInImage(const QImage *img, const QPoint &imgTopLeftPos, QRect rect);
-    void calculateEdgeRect();
+    QRect getRectInImage(const QImage *img, const QPoint &imgTopLeftPos, QRect rect);
+    void getEdgeRect();
     int getSelectedAreaSubscript(QPoint cursorPos);
     void selectedRectChangeEvent(int SR_LOCATION, QPoint &cursorPos);
 

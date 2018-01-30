@@ -52,7 +52,7 @@ private slots:
     void selectModeExit();
 
 protected:
-    void calculateImageLeftTopRelativePosInWidget(const int x, const int y, double &returnX, double &returnY);
+    void getImageLeftTopRelativePosInWidget(const int x, const int y, double &returnX, double &returnY);
 
 private:
     void updateZoomedImage();
@@ -61,8 +61,8 @@ private:
     void getDrawImageTopLeftPos(QPoint xy);
     void initializeContextmenu();
     void emitLeftClickedSignals(QMouseEvent *e);
-    QPoint calculateCursorPosInImage(const QImage *originalImage, const QImage *zoomedImage, const QPoint &imageLeftTopPos, QPoint cursorPos);
-    QPoint calculateCursorPosInZoomedImage(QPoint cursorPos);
+    QPoint getCursorPosInImage(const QImage *originalImage, const QImage *zoomedImage, const QPoint &imageLeftTopPos, QPoint cursorPos);
+    QPoint getCursorPosInZoomedImage(QPoint cursorPos);
     void setDefaultParameters();
     void setImageInCenter();
 
