@@ -69,8 +69,6 @@ void SelectRect::mousePressEvent(QMouseEvent *event)
         case Qt::LeftButton:
             mouseStatus = Qt::LeftButton;
             mouseLeftClickedPos = event->pos();
-            if(cursorPosInSelectedArea == SR_CENTER)
-                this->setCursor(Qt::ClosedHandCursor);
             // 关闭鼠标追踪 节省资源
             this->setMouseTracking(false);
             break;
@@ -120,7 +118,6 @@ void SelectRect::mouseReleaseEvent(QMouseEvent *event)
     update();
     // 开启鼠标追踪
     this->setMouseTracking(true);
-    this->setCursor(Qt::OpenHandCursor);
 }
 
 void SelectRect::contextMenuEvent(QContextMenuEvent *event)
@@ -194,7 +191,7 @@ int SelectRect::getSelectedAreaSubscript(QPoint cursorPos)
     // 可用树结构减少if
     if(selectedRect[SR_CENTER].contains(cursorPos,true))
     {
-        this->setCursor(Qt::OpenHandCursor);
+        this->setCursor(Qt::SizeAllCursor);
         return SR_CENTER;
     }
     if(selectedRect[SR_TOPLEFT].contains(cursorPos))
