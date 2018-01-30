@@ -1,5 +1,11 @@
 # Change Log: #
 
+- 2018.01.20:
+
+Added resizing selected rect frame function. And now, I realize all the function I wanted in this class. But it still have some performance issues, I will optimize or rewrite it when I can.
+
+添加了改变选中框尺寸的功能，至此该类已经达到了我所需的所有功能，但是还有一些性能上的问题。将来有能力和时间的话会进行优化或重写。
+
 - 2018.01.25 #2:
 
 Added dragging selected rect area funciton, but this function needs a lot computing resources, so it can be optimized in the future. Preparing to reduce variables and code.
