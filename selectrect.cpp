@@ -90,30 +90,7 @@ void SelectRect::mouseMoveEvent(QMouseEvent *event)
     if (mouseStatus == Qt::LeftButton )
     {
         isSelectedRectStable = false;
-        if(cursorPosInSelectedArea == SR_CENTER)
-        {
-
-            selectedRect[SR_CENTER].moveTo(lastSelectedRect.topLeft()+event->pos()-mouseLeftClickedPos);
-        }
-        else
-        {
-            // 限定在mask内
-            selectedRect[SR_CENTER].setTopLeft(mouseLeftClickedPos);
-            int x = event->x();
-            int y = event->y();
-            if(x < 0)
-                x = 0;
-            else if(x > this->width())
-                x = this->width();
-            if(y < 0)
-                y = 0;
-            else if (y > this->height())
-                y = this->height();
-            selectedRect[SR_CENTER].setWidth(x-selectedRect[SR_CENTER].x());
-            selectedRect[SR_CENTER].setHeight(y-selectedRect[SR_CENTER].y());
-            fixRectInfo(selectedRect[SR_CENTER]);
-            calculateEdgeRect();
-        }
+        selectedRectChangeEvent(cursorPosInSelectedArea,event->pos());
         update();
     }
     // 判断鼠标是否在矩形框内
@@ -261,6 +238,59 @@ int SelectRect::getSelectedAreaSubscript(QPoint cursorPos)
         return SR_LEFT;
     }
     return SR_NULL;
+}
+
+void SelectRect::selectedRectChangeEvent(int SR_LOCATION, QPoint &cursorPos)
+{
+    int x = cursorPos.x();
+    int y = cursorPos.y();
+    switch (SR_LOCATION)
+    {
+    case SR_NULL:
+        // 限定在mask内
+        selectedRect[SR_CENTER].setTopLeft(mouseLeftClickedPos);
+        if(x < 0)
+            x = 0;
+        else if(x > this->width())
+            x = this->width();
+        if(y < 0)
+            y = 0;
+        else if (y > this->height())
+            y = this->height();
+        selectedRect[SR_CENTER].setWidth(x-selectedRect[SR_CENTER].x());
+        selectedRect[SR_CENTER].setHeight(y-selectedRect[SR_CENTER].y());
+        fixRectInfo(selectedRect[SR_CENTER]);
+        break;
+    case SR_CENTER:
+        selectedRect[SR_CENTER].moveTo(lastSelectedRect.topLeft()+(cursorPos-mouseLeftClickedPos));
+        break;
+    case SR_TOPLEFT:
+        selectedRect[SR_CENTER].setTopLeft(lastSelectedRect.topLeft()+(cursorPos-mouseLeftClickedPos));
+        break;
+    case SR_TOP:
+        selectedRect[SR_CENTER].setTop(lastSelectedRect.top()+(cursorPos.y()-mouseLeftClickedPos.y()));
+        break;
+    case SR_TOPRIGHT:
+        selectedRect[SR_CENTER].setTopRight(lastSelectedRect.topRight()+(cursorPos-mouseLeftClickedPos));
+        break;
+    case SR_RIGHT:
+        selectedRect[SR_CENTER].setRight(lastSelectedRect.right()+(cursorPos.x()-mouseLeftClickedPos.x()));
+        break;
+    case SR_BOTTOMRIGHT:
+        selectedRect[SR_CENTER].setBottomRight(lastSelectedRect.bottomRight()+(cursorPos-mouseLeftClickedPos));
+        break;
+    case SR_BOTTOM:
+        selectedRect[SR_CENTER].setBottom(lastSelectedRect.bottom()+(cursorPos.y()-mouseLeftClickedPos.y()));
+        break;
+    case SR_BOTTOMLEFT:
+        selectedRect[SR_CENTER].setBottomLeft(lastSelectedRect.bottomLeft()+(cursorPos-mouseLeftClickedPos));
+        break;
+    case SR_LEFT:
+        selectedRect[SR_CENTER].setLeft(lastSelectedRect.left()+(cursorPos.x()-mouseLeftClickedPos.x()));
+        break;
+    default:
+        break;
+    }
 }
 
 void SelectRect::selectExit()
