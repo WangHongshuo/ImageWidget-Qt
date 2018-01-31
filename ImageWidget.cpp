@@ -13,7 +13,7 @@
 
 ImageWidget::ImageWidget(QWidget *parent):QWidget(parent)
 {
-    isLoadImage = false;
+    isImageLoaded = false;
     isSelectMode = false;
     qImageZoomedImage = new QImage;
     initializeContextmenu();
@@ -23,7 +23,7 @@ ImageWidget::~ImageWidget()
 {
     if(isImageCloned)
         delete qImageContainer;
-    if(isLoadImage)
+    if(isImageLoaded)
         qImageContainer = NULL;
     delete qImageZoomedImage;
     qImageZoomedImage = NULL;
@@ -38,14 +38,14 @@ void ImageWidget::setImageWithData(QImage img)
     }
     if(img.isNull())
     {
-        isLoadImage = false;
+        isImageLoaded = false;
         return;
     }
     else
     {
         *qImageContainer = img.copy();
 //        qDebug() << qImageContainer->bits() << img.bits();
-        isLoadImage = true;
+        isImageLoaded = true;
         *qImageZoomedImage = img.copy();
         updateZoomedImage();
         if(!isEnableRecordLastParameters)
@@ -58,13 +58,13 @@ void ImageWidget::setImageWithPointer(QImage *img)
 {
     if(img->isNull())
     {
-        isLoadImage = false;
+        isImageLoaded = false;
         return;
     }
     else
     {
         qImageContainer = img;
-        isLoadImage = true;
+        isImageLoaded = true;
         *qImageZoomedImage = img->copy();
         updateZoomedImage();
         if(!isEnableRecordLastParameters)
@@ -75,9 +75,9 @@ void ImageWidget::setImageWithPointer(QImage *img)
 
 void ImageWidget::clear()
 {
-    if(isLoadImage)
+    if(isImageLoaded)
     {
-        isLoadImage = false;
+        isImageLoaded = false;
         if(isImageCloned)
         {
             delete qImageContainer;
@@ -120,7 +120,7 @@ void ImageWidget::setEnableRecordLastParameters(bool flag)
     mActionRecordLastParameters->setChecked(isEnableRecordLastParameters);
 }
 
-void ImageWidget::setEnableSendLeftClickedPos(bool flag)
+void ImageWidget::setEnableSendLeftClickedPosInWidget(bool flag)
 {
     isEnableSendLeftClickedPos = flag;
 }
@@ -133,7 +133,7 @@ void ImageWidget::setEnableSendLeftClickedPosInImage(bool flag)
 
 void ImageWidget::wheelEvent(QWheelEvent *e)
 {
-    if(isLoadImage && !isSelectMode && !isOnlyShowImage && isEnableZoomImage)
+    if(isImageLoaded && !isSelectMode && !isOnlyShowImage && isEnableZoomImage)
     {
         int numDegrees = e->delta();
         if(numDegrees > 0)
@@ -151,7 +151,7 @@ void ImageWidget::wheelEvent(QWheelEvent *e)
 
 void ImageWidget::mousePressEvent(QMouseEvent *e)
 {
-    if(isLoadImage && !isOnlyShowImage)
+    if(isImageLoaded && !isOnlyShowImage)
     {
         switch(e->button())
         {
@@ -176,7 +176,7 @@ void ImageWidget::mousePressEvent(QMouseEvent *e)
 
 void ImageWidget::mouseReleaseEvent(QMouseEvent *e)
 {
-    if(isLoadImage && !isOnlyShowImage && isEnableDragImage)
+    if(isImageLoaded && !isOnlyShowImage && isEnableDragImage)
     {
         if(mouseStatus == Qt::LeftButton)
         {
@@ -187,6 +187,7 @@ void ImageWidget::mouseReleaseEvent(QMouseEvent *e)
                                                      imageTopLeftRelativePosInWdigetY);
             // 释放后鼠标状态置No
             mouseStatus = Qt::NoButton;
+            isImageDragged = true;
         }
     }
 }
@@ -194,23 +195,15 @@ void ImageWidget::mouseReleaseEvent(QMouseEvent *e)
 
 void ImageWidget::mouseMoveEvent(QMouseEvent *e)
 {
-    if(isLoadImage && !isOnlyShowImage && isEnableDragImage)
+    if(isImageLoaded && !isOnlyShowImage && isEnableDragImage)
     {
         if(mouseStatus == Qt::LeftButton )
         {
             // e->pos()为当前鼠标坐标 转换为相对移动距离
             //        qDebug() << e->x() << e->y();
-            getDrawImageTopLeftPos(e->pos()-mouseLeftClickedPos);
+            drawImageTopLeftPos = drawImageTopLeftLastPos+(e->pos()-mouseLeftClickedPos);
+            update();
         }
-    }
-}
-
-void ImageWidget::getDrawImageTopLeftPos(QPoint xy)
-{
-    if(isEnableDragImage)
-    {
-        drawImageTopLeftPos = drawImageTopLeftLastPos+xy;
-        update();
     }
 }
 
@@ -235,15 +228,14 @@ void ImageWidget::contextMenuEvent(QContextMenuEvent *e)
 
 void ImageWidget::resizeEvent(QResizeEvent *event)
 {
-    if(isEnableFitWidget && isLoadImage)
+    if(isImageLoaded)
     {
-        *qImageZoomedImage = qImageContainer->scaled(this->width()*zoomScale,this->height()*zoomScale,Qt::KeepAspectRatio);
-        // 如果图像没有被拖拽或者缩放过 置中
-        if((drawImageTopLeftPos.x() == 0 || drawImageTopLeftPos.y() == 0) &&
-                qImageZoomedImage->width() <= this->width() &&
-                qImageZoomedImage->height() <= this->height())
+        if(isEnableFitWidget)
+            *qImageZoomedImage = qImageContainer->scaled(this->width()*zoomScale,this->height()*zoomScale,Qt::KeepAspectRatio);
+        // 如果图像没有被拖拽或者缩放过 置中缩放
+        if(!isImageDragged)
         {
-            setImageInCenter();
+            drawImageTopLeftLastPos = drawImageTopLeftPos = getPutImageInCenterPos(qImageZoomedImage,this);
         }
         else
         {
@@ -251,15 +243,16 @@ void ImageWidget::resizeEvent(QResizeEvent *event)
             drawImageTopLeftPos.setY(int(double(this->height())*imageTopLeftRelativePosInWdigetY));
             drawImageTopLeftLastPos = drawImageTopLeftPos;
         }
+        if(isSelectMode)
+            emit parentWidgetSizeChanged(this->width(),this->height(),drawImageTopLeftPos.x(),drawImageTopLeftPos.y());
     }
-    if(isSelectMode && isLoadImage)
-        emit parentWidgetSizeChanged(this->width(),this->height(),drawImageTopLeftPos.x(),drawImageTopLeftPos.y());
 }
 
 void ImageWidget::resetImageWidget()
 {
     setDefaultParameters();
     updateZoomedImage();
+    isImageDragged = false;
     update();
 }
 
@@ -283,7 +276,7 @@ void ImageWidget::imageZoomIn()
 
 void ImageWidget::select()
 {
-    if(isLoadImage)
+    if(isImageLoaded)
     {
         isSelectMode = true;
         SelectRect* m = new SelectRect(this);
@@ -333,11 +326,11 @@ void ImageWidget::initializeContextmenu()
 void ImageWidget::emitLeftClickedSignals(QMouseEvent *e)
 {
     if(isEnableSendLeftClickedPos)
-        emit sendLeftClickedPos(e->x(),e->y());
+        emit sendLeftClickedPosInWidget(e->x(),e->y());
 
     if(isEnableSendLeftClickedPosInImage)
     {
-        if(!isLoadImage)
+        if(!isImageLoaded)
             emit sendLeftClickedPosInImage(-1,-1);
         else
         {
@@ -383,7 +376,7 @@ void ImageWidget::getImageLeftTopRelativePosInWidget(const int x, const int y, d
 
 void ImageWidget::save()
 {
-    if(isLoadImage)
+    if(isImageLoaded)
     {
         QImage temp = qImageContainer->copy();
         QString filename = QFileDialog::getSaveFileName(this, tr("Open File"),
@@ -403,7 +396,7 @@ void ImageWidget::updateZoomedImage()
 {
     QPoint cursorPosInWidget, cursorPosInImage;
     // 图像为空直接返回
-    if(!isLoadImage)
+    if(!isImageLoaded)
         return;
 
     if(isZoomedParametersChanged)
@@ -440,34 +433,21 @@ void ImageWidget::updateZoomedImage()
 void ImageWidget::setDefaultParameters()
 {
     zoomScale = 1.0;
-
-    if(isEnableFitWidget && isLoadImage)
+    if(isImageLoaded)
     {
         // 首先恢复zoomedImage大小再调整drawPos
         updateZoomedImage();
-        setImageInCenter();
+        drawImageTopLeftPos = drawImageTopLeftLastPos = getPutImageInCenterPos(qImageZoomedImage,this);
         getImageLeftTopRelativePosInWidget(drawImageTopLeftPos.x(),drawImageTopLeftPos.y(),
                                                  imageTopLeftRelativePosInWdigetX,
                                                  imageTopLeftRelativePosInWdigetY);
     }
-    else
-    {
-        drawImageTopLeftPos = drawImageTopLeftLastPos = QPoint(0,0);
-        imageTopLeftRelativePosInWdigetX = 0.0;
-        imageTopLeftRelativePosInWdigetY = 0.0;
-    }
 }
 
-void ImageWidget::setImageInCenter()
+QPoint ImageWidget::getPutImageInCenterPos(const QImage *showImage, const QWidget *ImageWidget)
 {
-    if(this->width()>qImageZoomedImage->width())
-        drawImageTopLeftPos.setX(int(double(this->width()-qImageZoomedImage->width())*0.5));
-    else
-        drawImageTopLeftPos.setX(0);
-
-    if(this->height()>qImageZoomedImage->height())
-        drawImageTopLeftPos.setY(int(double(this->height()-qImageZoomedImage->height())*0.5));
-    else
-        drawImageTopLeftPos.setY(0);
-    drawImageTopLeftLastPos = drawImageTopLeftPos;
+    QPoint returnPoint;
+    returnPoint.setX(int(double(ImageWidget->width()-showImage->width())/2));
+    returnPoint.setY(int(double(ImageWidget->height()-showImage->height())/2));
+    return returnPoint;
 }

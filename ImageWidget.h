@@ -31,7 +31,7 @@ public:
 
 signals:
     void parentWidgetSizeChanged(int width, int height, int imageLeftTopPosX, int imageLeftTopPosY);
-    void sendLeftClickedPos(int x, int y);
+    void sendLeftClickedPosInWidget(int x, int y);
     void sendLeftClickedPosInImage(int x, int y);
 
 public slots:
@@ -42,7 +42,7 @@ public slots:
     void setEnableImageFitWidget(bool flag = true);
     void setEnableRecordLastParameters(bool flag = false);
     // 发送点击位置坐标信号默认关闭，使用前需要开启
-    void setEnableSendLeftClickedPos(bool flag = false);
+    void setEnableSendLeftClickedPosInWidget(bool flag = false);
     void setEnableSendLeftClickedPosInImage(bool flag = false);
 
 private slots:
@@ -58,13 +58,12 @@ private:
     void updateZoomedImage();
     void imageZoomOut();
     void imageZoomIn();
-    void getDrawImageTopLeftPos(QPoint xy);
     void initializeContextmenu();
     void emitLeftClickedSignals(QMouseEvent *e);
     QPoint getCursorPosInImage(const QImage *originalImage, const QImage *zoomedImage, const QPoint &imageLeftTopPos, QPoint cursorPos);
     QPoint getCursorPosInZoomedImage(QPoint cursorPos);
     void setDefaultParameters();
-    void setImageInCenter();
+    QPoint getPutImageInCenterPos(const QImage *showImage, const QWidget *ImageWidget);
 
     void wheelEvent(QWheelEvent *e);
     void mouseMoveEvent(QMouseEvent * e);
@@ -89,10 +88,11 @@ private:
     QPoint drawImageTopLeftPos = QPoint(0,0);
 
     // status flags
-    bool isLoadImage = false;
+    bool isImageLoaded = false;
     bool isSelectMode = false;
     bool isOnlyShowImage = false;
     bool isImageCloned = false;
+    bool isImageDragged = false;
     bool isZoomedParametersChanged = false;
 
     bool isEnableDragImage = true;
