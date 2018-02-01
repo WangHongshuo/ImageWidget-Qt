@@ -36,7 +36,7 @@ signals:
 
 public slots:
     void clear();
-    void setOnlyShowImage(bool flag = false);
+    void setEnableOnlyShowImage(bool flag = false);
     void setEnableDragImage(bool flag = true);
     void setEnableZoomImage(bool flag = true);
     void setEnableImageFitWidget(bool flag = true);
@@ -71,30 +71,31 @@ private:
     void mouseReleaseEvent(QMouseEvent *e);
     void paintEvent(QPaintEvent *e);
     void contextMenuEvent(QContextMenuEvent *e);
-    void resizeEvent(QResizeEvent *event);
+    void resizeEvent(QResizeEvent *e);
+    void keyPressEvent(QKeyEvent *e);
 
     QImage *qImageContainer = NULL;
     QImage *qImageZoomedImage = NULL;
 
-    QSize lastZoomedImageSize;
+    QSize lastZoomedImageSize = QSize(0,0);
 
     double imageTopLeftRelativePosInWdigetX = 0.0;
     double imageTopLeftRelativePosInWdigetY = 0.0;
 
     double zoomScale = 1.0;
 
-    QPoint mouseLeftClickedPos;
+    QPoint mouseLeftClickedPos = QPoint(0,0);
     QPoint drawImageTopLeftLastPos = QPoint(0,0);
     QPoint drawImageTopLeftPos = QPoint(0,0);
 
     // status flags
     bool isImageLoaded = false;
     bool isSelectMode = false;
-    bool isOnlyShowImage = false;
     bool isImageCloned = false;
     bool isImageDragged = false;
     bool isZoomedParametersChanged = false;
 
+    bool isEnableOnlyShowImage = false;
     bool isEnableDragImage = true;
     bool isEnableZoomImage = true;
     bool isEnableFitWidget = true;
@@ -114,4 +115,5 @@ private:
     QAction *mActionEnableZoom = NULL;
     QAction *mActionImageFitWidget = NULL;
     QAction *mActionRecordLastParameters = NULL;
+
 };

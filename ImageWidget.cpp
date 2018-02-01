@@ -17,6 +17,7 @@ ImageWidget::ImageWidget(QWidget *parent):QWidget(parent)
     isSelectMode = false;
     qImageZoomedImage = new QImage;
     initializeContextmenu();
+    this->setFocusPolicy(Qt::StrongFocus);
 }
 
 ImageWidget::~ImageWidget()
@@ -90,9 +91,9 @@ void ImageWidget::clear()
 }
 
 
-void ImageWidget::setOnlyShowImage(bool flag)
+void ImageWidget::setEnableOnlyShowImage(bool flag)
 {
-    isOnlyShowImage = flag;
+    isEnableOnlyShowImage = flag;
 }
 
 void ImageWidget::setEnableDragImage(bool flag)
@@ -133,7 +134,7 @@ void ImageWidget::setEnableSendLeftClickedPosInImage(bool flag)
 
 void ImageWidget::wheelEvent(QWheelEvent *e)
 {
-    if(isImageLoaded && !isSelectMode && !isOnlyShowImage && isEnableZoomImage)
+    if(isImageLoaded && !isSelectMode && !isEnableOnlyShowImage && isEnableZoomImage)
     {
         int numDegrees = e->delta();
         if(numDegrees > 0)
@@ -151,7 +152,7 @@ void ImageWidget::wheelEvent(QWheelEvent *e)
 
 void ImageWidget::mousePressEvent(QMouseEvent *e)
 {
-    if(isImageLoaded && !isOnlyShowImage)
+    if(isImageLoaded && !isEnableOnlyShowImage)
     {
         switch(e->button())
         {
@@ -176,7 +177,7 @@ void ImageWidget::mousePressEvent(QMouseEvent *e)
 
 void ImageWidget::mouseReleaseEvent(QMouseEvent *e)
 {
-    if(isImageLoaded && !isOnlyShowImage && isEnableDragImage)
+    if(isImageLoaded && !isEnableOnlyShowImage && isEnableDragImage)
     {
         if(mouseStatus == Qt::LeftButton)
         {
@@ -195,7 +196,7 @@ void ImageWidget::mouseReleaseEvent(QMouseEvent *e)
 
 void ImageWidget::mouseMoveEvent(QMouseEvent *e)
 {
-    if(isImageLoaded && !isOnlyShowImage && isEnableDragImage)
+    if(isImageLoaded && !isEnableOnlyShowImage && isEnableDragImage)
     {
         if(mouseStatus == Qt::LeftButton )
         {
@@ -218,7 +219,7 @@ void ImageWidget::paintEvent(QPaintEvent *e)
 
 void ImageWidget::contextMenuEvent(QContextMenuEvent *e)
 {
-    if(!isOnlyShowImage)
+    if(!isEnableOnlyShowImage)
     {
         mMenu->exec(QCursor::pos());
         // 右键菜单弹出后 鼠标状态置No
@@ -226,7 +227,7 @@ void ImageWidget::contextMenuEvent(QContextMenuEvent *e)
     }
 }
 
-void ImageWidget::resizeEvent(QResizeEvent *event)
+void ImageWidget::resizeEvent(QResizeEvent *e)
 {
     if(isImageLoaded)
     {
@@ -246,6 +247,11 @@ void ImageWidget::resizeEvent(QResizeEvent *event)
         if(isSelectMode)
             emit parentWidgetSizeChanged(this->width(),this->height(),drawImageTopLeftPos.x(),drawImageTopLeftPos.y());
     }
+}
+
+void ImageWidget::keyPressEvent(QKeyEvent *e)
+{
+    qDebug() << "ImageWidget: " << e->key();
 }
 
 void ImageWidget::resetImageWidget()
@@ -278,7 +284,7 @@ void ImageWidget::select()
 {
     if(isImageLoaded)
     {
-        isSelectMode = true;
+//        isSelectMode = true;
         SelectRect* m = new SelectRect(this);
         m->setGeometry(0,0,this->geometry().width(),this->geometry().height());
         connect(m,SIGNAL(sendSelectModeExit()),this,SLOT(selectModeExit()));
@@ -286,6 +292,8 @@ void ImageWidget::select()
                 m,SLOT(receiveParentSizeChangedValue(int,int,int,int)));
         m->setImage(qImageContainer,qImageZoomedImage,drawImageTopLeftPos.x(),drawImageTopLeftPos.y());
         m->show();
+
+        m->setFocus();
     }
 }
 

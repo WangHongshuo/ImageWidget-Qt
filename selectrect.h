@@ -55,6 +55,9 @@ private:
     void mouseMoveEvent(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);
     void contextMenuEvent(QContextMenuEvent *event);
+    void wheelEvent(QWheelEvent *event);
+    bool eventFilter(QObject *watched, QEvent *event);
+    void keyPressEvent(QKeyEvent *event);
     void saveImage(const QImage *img, QRect rect);
     void fixRectInfo(QRect &rect);
     QRect getRectInImage(const QImage *img, const QPoint &imgTopLeftPos, QRect rect);
@@ -81,6 +84,7 @@ private:
     QImage *zoomedImage = NULL;
     bool isLoadImage = false;
     bool isSelectedRectStable = false;
+    bool isSelectedRectExisted = false;
     int cursorPosInSelectedArea = SR_NULL;
 };
 

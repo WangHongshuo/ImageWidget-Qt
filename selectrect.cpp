@@ -28,6 +28,9 @@ SelectRect::SelectRect(QWidget *parent) : QWidget(parent)
     connect(mActionReset,SIGNAL(triggered()),this,SLOT(selectReset()));
     // 关闭后释放资源
     this->setAttribute(Qt::WA_DeleteOnClose);
+    parent->lower();
+    this->raise();
+    this->setFocusPolicy(Qt::StrongFocus);
 }
 
 SelectRect::~SelectRect()
@@ -88,11 +91,12 @@ void SelectRect::mouseMoveEvent(QMouseEvent *event)
     if (mouseStatus == Qt::LeftButton )
     {
         isSelectedRectStable = false;
+        isSelectedRectExisted = true;
         selectedRectChangeEvent(cursorPosInSelectedArea,event->pos());
         update();
     }
     // 判断鼠标是否在矩形框内
-    if(mouseStatus == Qt::NoButton)
+    if(mouseStatus == Qt::NoButton && isSelectedRectStable)
     {
         if(selectedRect[SR_ENTIRETY].contains(event->pos()))
         {
@@ -108,22 +112,65 @@ void SelectRect::mouseMoveEvent(QMouseEvent *event)
 
 void SelectRect::mouseReleaseEvent(QMouseEvent *event)
 {
-    // 修正RectInfo::w和RectInfo::h为正
-    fixRectInfo(selectedRect[SR_CENTER]);
-    // 备份
-    lastSelectedRect = selectedRect[SR_CENTER];
-    mouseStatus = Qt::NoButton;
-    getEdgeRect();
-    isSelectedRectStable = true;
-    update();
-    // 开启鼠标追踪
-    this->setMouseTracking(true);
+    if(mouseStatus == Qt::LeftButton)
+    {
+        // 修正RectInfo::w和RectInfo::h为正
+        fixRectInfo(selectedRect[SR_CENTER]);
+        // 备份
+        lastSelectedRect = selectedRect[SR_CENTER];
+        mouseStatus = Qt::NoButton;
+        getEdgeRect();
+        isSelectedRectStable = true;
+        isSelectedRectExisted = true;
+        update();
+        // 开启鼠标追踪
+        this->setMouseTracking(true);
+        mouseStatus = Qt::NoButton;
+    }
 }
 
 void SelectRect::contextMenuEvent(QContextMenuEvent *event)
 {
     mMenu->exec(QCursor::pos());
     mouseStatus = Qt::NoButton;
+}
+
+void SelectRect::wheelEvent(QWheelEvent *event)
+{
+   eventFilter(this,event);
+}
+
+bool SelectRect::eventFilter(QObject *watched, QEvent *event)
+{
+    if(event->type()==QEvent::KeyPress)
+    {
+        QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+        if(keyEvent->key() == Qt::Key_Escape)
+        {
+            // 如果存在选中框则删除选中框 不存在则退出
+            if(isSelectedRectExisted)
+            {
+                selectReset();
+                return true;
+            }
+            else
+                this->selectExit();
+        }
+
+    }
+    // 截断wheelEvent
+    if(event->type() == QEvent::Wheel)
+    {
+        QWheelEvent *wheelEvent = static_cast<QWheelEvent *>(event);
+        wheelEvent->accept();
+        return true;
+    }
+    return false;
+}
+
+void SelectRect::keyPressEvent(QKeyEvent *event)
+{
+    eventFilter(this,event);
 }
 
 QRect SelectRect::getRectInImage(const QImage *img, const QPoint &imgTopLeftPos, QRect rect)
@@ -300,11 +347,14 @@ void SelectRect::selectReset()
 {
     selectedRect[SR_CENTER] = QRect(0,0,0,0);
     lastSelectedRect = QRect(0,0,0,0);
+
     isSelectedRectStable = false;
+    isSelectedRectExisted = false;
     // 关闭鼠标追踪 节省资源
     this->setMouseTracking(false);
     this->setCursor(Qt::ArrowCursor);
     cursorPosInSelectedArea = SR_NULL;
+    mouseStatus = Qt::NoButton;
     update();
 }
 
