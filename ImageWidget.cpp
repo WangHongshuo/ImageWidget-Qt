@@ -17,7 +17,6 @@ ImageWidget::ImageWidget(QWidget *parent):QWidget(parent)
     isSelectMode = false;
     qImageZoomedImage = new QImage;
     initializeContextmenu();
-    this->setFocusPolicy(Qt::StrongFocus);
 }
 
 ImageWidget::~ImageWidget()
@@ -131,10 +130,14 @@ void ImageWidget::setEnableSendLeftClickedPosInImage(bool flag)
     isEnableSendLeftClickedPosInImage = flag;
 }
 
+QPoint ImageWidget::getDrawImageTopLeftPos() const
+{
+    return drawImageTopLeftPos;
+}
 
 void ImageWidget::wheelEvent(QWheelEvent *e)
 {
-    if(isImageLoaded && !isSelectMode && !isEnableOnlyShowImage && isEnableZoomImage)
+    if(isImageLoaded && !isEnableOnlyShowImage && isEnableZoomImage)
     {
         int numDegrees = e->delta();
         if(numDegrees > 0)
@@ -245,13 +248,8 @@ void ImageWidget::resizeEvent(QResizeEvent *e)
             drawImageTopLeftLastPos = drawImageTopLeftPos;
         }
         if(isSelectMode)
-            emit parentWidgetSizeChanged(this->width(),this->height(),drawImageTopLeftPos.x(),drawImageTopLeftPos.y());
+            emit sendParentWidgetSizeChangedSignal();
     }
-}
-
-void ImageWidget::keyPressEvent(QKeyEvent *e)
-{
-    qDebug() << "ImageWidget: " << e->key();
 }
 
 void ImageWidget::resetImageWidget()
@@ -284,16 +282,13 @@ void ImageWidget::select()
 {
     if(isImageLoaded)
     {
-//        isSelectMode = true;
+        isSelectMode = true;
         SelectRect* m = new SelectRect(this);
         m->setGeometry(0,0,this->geometry().width(),this->geometry().height());
         connect(m,SIGNAL(sendSelectModeExit()),this,SLOT(selectModeExit()));
-        connect(this,SIGNAL(parentWidgetSizeChanged(int,int,int,int)),
-                m,SLOT(receiveParentSizeChangedValue(int,int,int,int)));
-        m->setImage(qImageContainer,qImageZoomedImage,drawImageTopLeftPos.x(),drawImageTopLeftPos.y());
+        connect(this,SIGNAL(sendParentWidgetSizeChangedSignal()),m,SLOT(receiveParentSizeChangedSignal()));
+        m->setImage(qImageContainer,qImageZoomedImage,drawImageTopLeftPos);
         m->show();
-
-        m->setFocus();
     }
 }
 

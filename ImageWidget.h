@@ -30,7 +30,7 @@ public:
     void setImageWithPointer(QImage* img);
 
 signals:
-    void parentWidgetSizeChanged(int width, int height, int imageLeftTopPosX, int imageLeftTopPosY);
+    void sendParentWidgetSizeChangedSignal();
     void sendLeftClickedPosInWidget(int x, int y);
     void sendLeftClickedPosInImage(int x, int y);
 
@@ -44,6 +44,7 @@ public slots:
     // 发送点击位置坐标信号默认关闭，使用前需要开启
     void setEnableSendLeftClickedPosInWidget(bool flag = false);
     void setEnableSendLeftClickedPosInImage(bool flag = false);
+    QPoint getDrawImageTopLeftPos() const;
 
 private slots:
     void resetImageWidget();
@@ -72,7 +73,6 @@ private:
     void paintEvent(QPaintEvent *e);
     void contextMenuEvent(QContextMenuEvent *e);
     void resizeEvent(QResizeEvent *e);
-    void keyPressEvent(QKeyEvent *e);
 
     QImage *qImageContainer = NULL;
     QImage *qImageZoomedImage = NULL;

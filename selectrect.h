@@ -25,12 +25,11 @@ public:
 
     SelectRect(QWidget *parent);
     ~SelectRect();
-    void setImage(QImage *img, QImage *zoomedImg, int x,int y)
+    void setImage(QImage *img, QImage *zoomedImg, QPoint imageLeftTop)
     {
         image = img;
         zoomedImage = zoomedImg;
-        drawImageTopLeftPos.setX(x);
-        drawImageTopLeftPos.setY(y);
+        drawImageTopLeftPos = imageLeftTop;
         isLoadImage = true;
     }
     QPoint drawImageTopLeftPos = QPoint(-1,-1);
@@ -43,7 +42,7 @@ public slots:
 
 
 private slots:
-    void receiveParentSizeChangedValue(int width, int height, int imageLeftTopPosX, int imageLeftTopPosY);
+    void receiveParentSizeChangedSignal();
     void selectExit();
     void selectReset();
     void cropZoomedImage();

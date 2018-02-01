@@ -28,8 +28,6 @@ SelectRect::SelectRect(QWidget *parent) : QWidget(parent)
     connect(mActionReset,SIGNAL(triggered()),this,SLOT(selectReset()));
     // 关闭后释放资源
     this->setAttribute(Qt::WA_DeleteOnClose);
-    parent->lower();
-    this->raise();
     this->setFocusPolicy(Qt::StrongFocus);
 }
 
@@ -40,6 +38,15 @@ SelectRect::~SelectRect()
     image = NULL;
     zoomedImage = NULL;
     mMenu = NULL;
+}
+
+void SelectRect::receiveParentSizeChangedSignal()
+{
+    ImageWidget *parentWidget = static_cast<ImageWidget *>(this->parent());
+    this->setGeometry(0,0,parentWidget->width(),parentWidget->height());
+    qDebug() << this->geometry();
+    drawImageTopLeftPos = parentWidget->getDrawImageTopLeftPos();
+    update();
 }
 
 void SelectRect::paintEvent(QPaintEvent *event)
@@ -420,13 +427,5 @@ void SelectRect::fixRectInfo(QRect &rect)
     }
     rect.setTopLeft(topLeft);
     rect.setSize(QSize(width,height));
-}
-
-void SelectRect::receiveParentSizeChangedValue(int width, int height, int imageLeftTopPosX, int imageLeftTopPosY)
-{
-    this->setGeometry(0,0,width,height);
-    drawImageTopLeftPos.setX(imageLeftTopPosX);
-    drawImageTopLeftPos.setY(imageLeftTopPosY);
-    update();
 }
 
