@@ -82,10 +82,19 @@ void ImageWidget::clear()
         {
             delete qImageContainer;
             qImageContainer = NULL;
+            isImageCloned = false;
         }
         else
             qImageContainer = NULL;
-        resetImageWidget();
+
+        lastZoomedImageSize = QSize(0,0);
+        imageTopLeftRelativePosInWdigetX = 0.0;
+        imageTopLeftRelativePosInWdigetY = 0.0;
+        zoomScale = 1.0;
+        mouseLeftClickedPos = QPoint(0,0);
+        drawImageTopLeftLastPos = QPoint(0,0);
+        drawImageTopLeftPos = QPoint(0,0);
+        update();
     }
 }
 
@@ -216,7 +225,7 @@ void ImageWidget::paintEvent(QPaintEvent *e)
     QPainter painter(this);
     painter.setBrush(QBrush(QColor(200,200,200)));
     painter.drawRect(0,0,this->width(),this->height());
-    if(!qImageZoomedImage->isNull())
+    if(isImageLoaded)
         painter.drawImage(drawImageTopLeftPos,*qImageZoomedImage);
 }
 
