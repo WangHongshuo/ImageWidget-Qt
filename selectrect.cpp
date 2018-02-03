@@ -291,7 +291,7 @@ int SelectRect::getSelectedAreaSubscript(QPoint cursorPos)
     return SR_NULL;
 }
 
-void SelectRect::selectedRectChangeEvent(int SR_LOCATION, QPoint &cursorPos)
+void SelectRect::selectedRectChangeEvent(int SR_LOCATION, const QPoint &cursorPos)
 {
     int x = cursorPos.x();
     int y = cursorPos.y();
