@@ -93,6 +93,7 @@ private:
     bool isSelectMode = false;
     bool isImageCloned = false;
     bool isImageDragged = false;
+    bool isImageDragging = false;
     bool isZoomedParametersChanged = false;
 
     bool isEnableOnlyShowImage = false;

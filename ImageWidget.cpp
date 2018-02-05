@@ -182,13 +182,15 @@ void ImageWidget::mousePressEvent(QMouseEvent *e)
             mouseStatus = Qt::NoButton;
         }
     }
-    if(e->button() == Qt::LeftButton)
-        emitLeftClickedSignals(e);
-
 }
 
 void ImageWidget::mouseReleaseEvent(QMouseEvent *e)
 {
+    if(mouseStatus == Qt::LeftButton && !isImageDragging)
+    {
+        emitLeftClickedSignals(e);
+        mouseStatus = Qt::NoButton;
+    }
     if(isImageLoaded && !isEnableOnlyShowImage && isEnableDragImage)
     {
         if(mouseStatus == Qt::LeftButton)
@@ -201,6 +203,7 @@ void ImageWidget::mouseReleaseEvent(QMouseEvent *e)
             // 释放后鼠标状态置No
             mouseStatus = Qt::NoButton;
             isImageDragged = true;
+            isImageDragging = false;
         }
     }
 }
@@ -215,6 +218,7 @@ void ImageWidget::mouseMoveEvent(QMouseEvent *e)
             // e->pos()为当前鼠标坐标 转换为相对移动距离
             //        qDebug() << e->x() << e->y();
             drawImageTopLeftPos = drawImageTopLeftLastPos+(e->pos()-mouseLeftClickedPos);
+            isImageDragging = true;
             update();
         }
     }
