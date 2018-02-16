@@ -28,6 +28,12 @@ public:
 
     void setImageWithData(QImage img);
     void setImageWithPointer(QImage* img);
+    void setEnableOnlyShowImage(bool flag = false);
+
+    // 发送点击位置坐标信号默认关闭，使用前需要开启
+    void setEnableSendLeftClickedPosInWidget(bool flag = false);
+    void setEnableSendLeftClickedPosInImage(bool flag = false);
+    QPoint getDrawImageTopLeftPos() const;
 
 signals:
     void sendParentWidgetSizeChangedSignal();
@@ -36,15 +42,10 @@ signals:
 
 public slots:
     void clear();
-    void setEnableOnlyShowImage(bool flag = false);
     void setEnableDragImage(bool flag = true);
     void setEnableZoomImage(bool flag = true);
     void setEnableImageFitWidget(bool flag = true);
     void setEnableRecordLastParameters(bool flag = false);
-    // 发送点击位置坐标信号默认关闭，使用前需要开启
-    void setEnableSendLeftClickedPosInWidget(bool flag = false);
-    void setEnableSendLeftClickedPosInImage(bool flag = false);
-    QPoint getDrawImageTopLeftPos() const;
 
 private slots:
     void resetImageWidget();
