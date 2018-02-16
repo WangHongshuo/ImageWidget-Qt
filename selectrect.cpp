@@ -62,11 +62,13 @@ void SelectRect::paintEvent(QPaintEvent *event)
     mask.addRect(this->geometry());
     QPainterPath drawMask =mask.subtracted(selectArea);
     QPainter painter(this);
-    painter.setPen(QPen(QColor(0, 140, 255, 255), 1));
+    painter.setPen(QPen(QColor(255, 0, 0, 255), 1));
     painter.fillPath(drawMask,QBrush(QColor(0,0,0,160)));
     painter.drawRect(selectedRect[SR_CENTER]);
     if(isSelectedRectStable)
     {
+        painter.setPen(QPen(QColor(0, 140, 255, 255), 1));
+        painter.drawRect(selectedRect[SR_CENTER]);
     for(int i=1;i<5;i++)
         painter.fillRect(selectedRect[i],QBrush(QColor(0,140,255,255)));
     }
@@ -210,31 +212,31 @@ QRect SelectRect::getRectInImage(const QImage *img, const QPoint &imgTopLeftPos,
 void SelectRect::getEdgeRect()
 {
     // 边框宽
-    int w = 4;
+    int w = 5;
 
-    selectedRect[SR_TOPLEFT].setTopLeft(selectedRect[SR_CENTER].topLeft()-QPoint(w,w));
-    selectedRect[SR_TOPLEFT].setBottomRight(selectedRect[SR_CENTER].topLeft());
+    selectedRect[SR_TOPLEFT].setTopLeft(selectedRect[SR_CENTER].topLeft()+QPoint(-w,-w));
+    selectedRect[SR_TOPLEFT].setBottomRight(selectedRect[SR_CENTER].topLeft()+QPoint(-1,-1));
 
-    selectedRect[SR_TOPRIGHT].setTopLeft(selectedRect[SR_CENTER].topRight()-QPoint(0,w));
-    selectedRect[SR_TOPRIGHT].setBottomRight(selectedRect[SR_CENTER].topRight()+QPoint(w,0));
+    selectedRect[SR_TOPRIGHT].setTopRight(selectedRect[SR_CENTER].topRight()+QPoint(w,-w));
+    selectedRect[SR_TOPRIGHT].setBottomLeft(selectedRect[SR_CENTER].topRight()+QPoint(1,-1));
 
-    selectedRect[SR_BOTTOMRIGHT].setTopLeft(selectedRect[SR_CENTER].bottomRight());
+    selectedRect[SR_BOTTOMRIGHT].setTopLeft(selectedRect[SR_CENTER].bottomRight()+QPoint(1,1));
     selectedRect[SR_BOTTOMRIGHT].setBottomRight(selectedRect[SR_CENTER].bottomRight()+QPoint(w,w));
 
-    selectedRect[SR_BOTTOMLEFT].setTopLeft(selectedRect[SR_CENTER].bottomLeft()-QPoint(w,0));
-    selectedRect[SR_BOTTOMLEFT].setBottomRight(selectedRect[SR_CENTER].bottomLeft()+QPoint(0,w));
+    selectedRect[SR_BOTTOMLEFT].setTopRight(selectedRect[SR_CENTER].bottomLeft()+QPoint(-1,1));
+    selectedRect[SR_BOTTOMLEFT].setBottomLeft(selectedRect[SR_CENTER].bottomLeft()+QPoint(-w,w));
 
-    selectedRect[SR_TOP].setTopLeft(selectedRect[SR_TOPLEFT].topRight());
-    selectedRect[SR_TOP].setBottomRight(selectedRect[SR_TOPRIGHT].bottomLeft());
+    selectedRect[SR_TOP].setTopLeft(selectedRect[SR_TOPLEFT].topRight()+QPoint(1,0));
+    selectedRect[SR_TOP].setBottomRight(selectedRect[SR_TOPRIGHT].bottomLeft()+QPoint(-1,0));
 
-    selectedRect[SR_RIGHT].setTopLeft(selectedRect[SR_TOPRIGHT].bottomLeft());
-    selectedRect[SR_RIGHT].setBottomRight(selectedRect[SR_BOTTOMRIGHT].topRight());
+    selectedRect[SR_RIGHT].setTopLeft(selectedRect[SR_TOPRIGHT].bottomLeft()+QPoint(0,1));
+    selectedRect[SR_RIGHT].setBottomRight(selectedRect[SR_BOTTOMRIGHT].topRight()+QPoint(0,-1));
 
-    selectedRect[SR_BOTTOM].setTopLeft(selectedRect[SR_BOTTOMLEFT].topRight());
-    selectedRect[SR_BOTTOM].setBottomRight(selectedRect[SR_BOTTOMRIGHT].bottomLeft());
+    selectedRect[SR_BOTTOM].setTopLeft(selectedRect[SR_BOTTOMLEFT].topRight()+QPoint(1,0));
+    selectedRect[SR_BOTTOM].setBottomRight(selectedRect[SR_BOTTOMRIGHT].bottomLeft()+QPoint(-1,0));
 
-    selectedRect[SR_LEFT].setTopLeft(selectedRect[SR_TOPLEFT].bottomLeft());
-    selectedRect[SR_LEFT].setBottomRight(selectedRect[SR_BOTTOMLEFT].topRight());
+    selectedRect[SR_LEFT].setTopLeft(selectedRect[SR_TOPLEFT].bottomLeft()+QPoint(0,1));
+    selectedRect[SR_LEFT].setBottomRight(selectedRect[SR_BOTTOMLEFT].topRight()+QPoint(0,-1));
 
     selectedRect[SR_ENTIRETY].setTopLeft(selectedRect[SR_TOPLEFT].topLeft());
     selectedRect[SR_ENTIRETY].setBottomRight(selectedRect[SR_BOTTOMRIGHT].bottomRight());
@@ -243,7 +245,7 @@ void SelectRect::getEdgeRect()
 int SelectRect::getSelectedAreaSubscript(QPoint cursorPos)
 {
     // 可用树结构减少if
-    if(selectedRect[SR_CENTER].contains(cursorPos,true))
+    if(selectedRect[SR_CENTER].contains(cursorPos))
     {
         this->setCursor(Qt::SizeAllCursor);
         return SR_CENTER;
@@ -253,7 +255,7 @@ int SelectRect::getSelectedAreaSubscript(QPoint cursorPos)
         this->setCursor(Qt::SizeFDiagCursor);
         return SR_TOPLEFT;
     }
-    if(selectedRect[SR_TOP].contains(cursorPos,true))
+    if(selectedRect[SR_TOP].contains(cursorPos))
     {
         this->setCursor(Qt::SizeVerCursor);
         return SR_TOP;
@@ -263,7 +265,7 @@ int SelectRect::getSelectedAreaSubscript(QPoint cursorPos)
         this->setCursor(Qt::SizeBDiagCursor);
         return SR_TOPRIGHT;
     }
-    if(selectedRect[SR_RIGHT].contains(cursorPos,true))
+    if(selectedRect[SR_RIGHT].contains(cursorPos))
     {
         this->setCursor(Qt::SizeHorCursor);
         return SR_RIGHT;
@@ -273,7 +275,7 @@ int SelectRect::getSelectedAreaSubscript(QPoint cursorPos)
         this->setCursor(Qt::SizeFDiagCursor);
         return SR_BOTTOMRIGHT;
     }
-    if(selectedRect[SR_BOTTOM].contains(cursorPos,true))
+    if(selectedRect[SR_BOTTOM].contains(cursorPos))
     {
         this->setCursor(Qt::SizeVerCursor);
         return SR_BOTTOM;
@@ -283,7 +285,7 @@ int SelectRect::getSelectedAreaSubscript(QPoint cursorPos)
         this->setCursor(Qt::SizeBDiagCursor);
         return SR_BOTTOMLEFT;
     }
-    if(selectedRect[SR_LEFT].contains(cursorPos,true))
+    if(selectedRect[SR_LEFT].contains(cursorPos))
     {
         this->setCursor(Qt::SizeHorCursor);
         return SR_LEFT;
