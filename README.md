@@ -14,11 +14,11 @@ It's my first time to write a class and this class inherit from QWidget. It can 
 ![](https://github.com/WangHongshuo/Readme_Images_Repository/blob/master/ImageWidget-Qt/ImageWidget-Qt_2.gif)
 ## Last Change: ##
 
-- 2018.01.30:
+- 2018.06.14
 
-Added resizing selected rect frame function. And now, I realize all the function I wanted in this class. But it still have some performance issues, I will optimize or rewrite it when I can.
+Added setImageWithFilePath().
 
-添加了改变选中框尺寸的功能，至此该类已经达到了我所需的所有功能，但是还有一些性能上的问题。将来有能力和时间的话会进行优化或重写。
+添加用图像文件路径设置图像的方式。
 
 - Full [Change Log](./ChangeLog.md)
 

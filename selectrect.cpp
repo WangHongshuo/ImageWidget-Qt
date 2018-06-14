@@ -44,7 +44,7 @@ void SelectRect::receiveParentSizeChangedSignal()
 {
     ImageWidget *parentWidget = static_cast<ImageWidget *>(this->parent());
     this->setGeometry(0,0,parentWidget->width(),parentWidget->height());
-    qDebug() << this->geometry();
+//    qDebug() << this->geometry();
     drawImageTopLeftPos = parentWidget->getDrawImageTopLeftPos();
     update();
 }

@@ -26,8 +26,9 @@ public:
     ImageWidget(QWidget *parent);
 	~ImageWidget();
 
-    void setImageWithData(QImage img);
+    void setImageWithData(QImage &img);
     void setImageWithPointer(QImage* img);
+    void setImageWithFilePath(QString &path);
     void setEnableOnlyShowImage(bool flag = false);
 
     // 发送点击位置坐标信号默认关闭，使用前需要开启

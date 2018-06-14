@@ -29,7 +29,7 @@ ImageWidget::~ImageWidget()
     qImageZoomedImage = NULL;
 }
 
-void ImageWidget::setImageWithData(QImage img)
+void ImageWidget::setImageWithData(QImage &img)
 {
     if(!isImageCloned)
     {
@@ -66,6 +66,36 @@ void ImageWidget::setImageWithPointer(QImage *img)
         qImageContainer = img;
         isImageLoaded = true;
         *qImageZoomedImage = img->copy();
+        updateZoomedImage();
+        if(!isEnableRecordLastParameters)
+            setDefaultParameters();
+        update();
+    }
+}
+
+void ImageWidget::setImageWithFilePath(QString &path)
+{
+    if(!isImageCloned)
+    {
+        qImageContainer = new QImage;
+        isImageCloned = true;
+    }
+    if(path.isEmpty() || path.isNull())
+    {
+        isImageLoaded = false;
+        return;
+    }
+    else
+    {
+        qImageContainer->load(path);
+        if(qImageContainer->isNull())
+        {
+            isImageLoaded = false;
+            return;
+        }
+//        qDebug() << qImageContainer->bits() << img.bits();
+        isImageLoaded = true;
+        *qImageZoomedImage = qImageContainer->copy();
         updateZoomedImage();
         if(!isEnableRecordLastParameters)
             setDefaultParameters();

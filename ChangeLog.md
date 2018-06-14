@@ -1,5 +1,11 @@
 # Change Log: #
 
+- 2018.06.14
+
+Added setImageWithFilePath().
+
+添加用图像文件路径设置图像的方式。
+
 - 2018.01.30:
 
 Added resizing selected rect frame function. And now, I realize all the function I wanted in this class. But it still have some performance issues, I will optimize or rewrite it when I can.
