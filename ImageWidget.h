@@ -5,8 +5,8 @@
 #pragma execution_character_set("utf-8")
 #endif
 
-#include <QWidget>
 #include <QMenu>
+#include <QWidget>
 
 #ifndef IMAGEWIDGET_H
 #define IMAGEWIDGET_H
@@ -14,11 +14,9 @@
 #ifndef SELECTRECT_H
 #define SELECTERCT_H
 
-class SelectRect : public QWidget
-{
+class SelectRect : public QWidget {
     Q_OBJECT
 public:
-
     SelectRect(QWidget* parent = nullptr);
     ~SelectRect();
 
@@ -32,7 +30,6 @@ public:
     QPoint drawImageTopLeftPos = QPoint(-1, -1);
 
 protected:
-
 signals:
     void sendSelectModeExit();
 
@@ -67,8 +64,17 @@ private:
     QAction* mActionSaveOriginalImage = nullptr;
     QAction* mActionExit = nullptr;
     enum {
-        SR_NULL = -1, SR_CENTER, SR_TOPLEFT, SR_TOPRIGHT, SR_BOTTOMRIGHT, SR_BOTTOMLEFT,
-        SR_TOP, SR_RIGHT, SR_BOTTOM, SR_LEFT, SR_ENTIRETY
+        SR_NULL = -1,
+        SR_CENTER,
+        SR_TOPLEFT,
+        SR_TOPRIGHT,
+        SR_BOTTOMRIGHT,
+        SR_BOTTOMLEFT,
+        SR_TOP,
+        SR_RIGHT,
+        SR_BOTTOM,
+        SR_LEFT,
+        SR_ENTIRETY
     };
     // Widget中选中的范围
     QRect selectedRect[10];
@@ -88,8 +94,7 @@ private:
 
 #endif
 
-class ImageWidget : public QWidget
-{
+class ImageWidget : public QWidget {
     Q_OBJECT
 public:
     explicit ImageWidget(QWidget* parent = nullptr);
