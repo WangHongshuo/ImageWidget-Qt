@@ -20,7 +20,7 @@ public:
     SelectRect(QWidget* parent = nullptr);
     ~SelectRect();
 
-    void setImage(QImage* img, QImage* zoomedImg, QPoint imageLeftTop)
+    void setImage(QImage* img, QImage* zoomedImg, const QPoint& imageLeftTop)
     {
         image = img;
         zoomedImage = zoomedImg;
@@ -63,19 +63,7 @@ private:
     QAction* mActionSaveZoomedImage = nullptr;
     QAction* mActionSaveOriginalImage = nullptr;
     QAction* mActionExit = nullptr;
-    enum {
-        SR_NULL = -1,
-        SR_CENTER,
-        SR_TOPLEFT,
-        SR_TOPRIGHT,
-        SR_BOTTOMRIGHT,
-        SR_BOTTOMLEFT,
-        SR_TOP,
-        SR_RIGHT,
-        SR_BOTTOM,
-        SR_LEFT,
-        SR_ENTIRETY
-    };
+    enum { SR_NULL = -1, SR_CENTER, SR_TOPLEFT, SR_TOPRIGHT, SR_BOTTOMRIGHT, SR_BOTTOMLEFT, SR_TOP, SR_RIGHT, SR_BOTTOM, SR_LEFT, SR_ENTIRETY };
     // Widget中选中的范围
     QRect selectedRect[10];
     QRect lastSelectedRect;
@@ -99,15 +87,18 @@ class ImageWidget : public QWidget {
 public:
     explicit ImageWidget(QWidget* parent = nullptr);
     ~ImageWidget();
+    // 对外统一呈现setImage()接口
+    bool setImage(const QImage& img, bool isDeepCopy = false);
+    bool setImage(const QString& filePath);
 
-    void setImageWithData(QImage& img);
+    bool setImageWithData(QImage& img);
     void setImageWithPointer(QImage* img);
     void setImageWithFilePath(QString& path);
     void setEnableOnlyShowImage(bool flag = false);
 
     // 发送点击位置坐标信号默认关闭，使用前需要开启
-    void setEnableSendLeftClickedPosInWidget(bool flag = false);
-    void setEnableSendLeftClickedPosInImage(bool flag = false);
+    ImageWidget* setEnableSendLeftClickedPosInWidget(bool flag = false);
+    ImageWidget* setEnableSendLeftClickedPosInImage(bool flag = false);
     QPoint getDrawImageTopLeftPos() const;
 
 signals:
@@ -117,10 +108,10 @@ signals:
 
 public slots:
     void clear();
-    void setEnableDragImage(bool flag = true);
-    void setEnableZoomImage(bool flag = true);
-    void setEnableImageFitWidget(bool flag = true);
-    void setEnableRecordLastParameters(bool flag = false);
+    ImageWidget* setEnableDrag(bool flag = true);
+    ImageWidget* setEnableZoom(bool flag = true);
+    ImageWidget* setEnableAutoFit(bool flag = true);
+    ImageWidget* setEnableLoadImageWithDefaultConfig(bool flag = false);
 
 private slots:
     void resetImageWidget();
@@ -137,10 +128,10 @@ private:
     void imageZoomIn();
     void initializeContextmenu();
     void emitLeftClickedSignals(QMouseEvent* e);
-    QPoint getCursorPosInImage(const QImage* originalImage, const QImage* zoomedImage, const QPoint& imageLeftTopPos, QPoint cursorPos);
+    QPoint getCursorPosInImage(const QImage& originalImage, const QImage& zoomedImage, const QPoint& imageLeftTopPos, const QPoint& cursorPos);
     QPoint getCursorPosInZoomedImage(QPoint cursorPos);
     void setDefaultParameters();
-    QPoint getPutImageInCenterPos(const QImage* showImage, const QWidget* ImageWidget);
+    QPoint getPutImageInCenterPos(const QImage& showImage, const QWidget *ImageWidget);
 
     void wheelEvent(QWheelEvent* e);
     void mouseMoveEvent(QMouseEvent* e);
@@ -150,8 +141,9 @@ private:
     void contextMenuEvent(QContextMenuEvent* e);
     void resizeEvent(QResizeEvent* e);
 
-    QImage* qImageContainer = nullptr;
-    QImage* qImageZoomedImage = nullptr;
+    static const QImage VOID_QIMAGE;
+    QImage qImgContainer;
+    QImage qImgZoomedContainer;
 
     QSize lastZoomedImageSize = QSize(0, 0);
 
@@ -172,13 +164,13 @@ private:
     bool isImageDragging = false;
     bool isZoomedParametersChanged = false;
 
-    bool isEnableOnlyShowImage = false;
-    bool isEnableDragImage = true;
-    bool isEnableZoomImage = true;
-    bool isEnableFitWidget = true;
-    bool isEnableRecordLastParameters = false;
-    bool isEnableSendLeftClickedPos = false;
-    bool isEnableSendLeftClickedPosInImage = false;
+    bool enableOnlyShowImage = false;
+    bool enableDragImage = true;
+    bool enableZoomImage = true;
+    bool enableAutoFitWidget = true;
+    bool enableLoadImageWithDefaultConfig = false;
+    bool enableSendLeftClickedPosInWidget = false;
+    bool enableSendLeftClickedPosInImage = false;
 
     int mouseStatus = Qt::NoButton;
     // 1
@@ -190,8 +182,8 @@ private:
     QMenu* mMenuAdditionalFunction = nullptr;
     QAction* mActionEnableDrag = nullptr;
     QAction* mActionEnableZoom = nullptr;
-    QAction* mActionImageFitWidget = nullptr;
-    QAction* mActionRecordLastParameters = nullptr;
+    QAction* mActionImageAutoFitWidget = nullptr;
+    QAction* mActionLoadImageWithDefaultConfig = nullptr;
 };
 
 #endif // IMAGEWIDGET_H
