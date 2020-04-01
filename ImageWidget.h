@@ -90,10 +90,8 @@ public:
     // 对外统一呈现setImage()接口
     bool setImage(const QImage& img, bool isDeepCopy = false);
     bool setImage(const QString& filePath);
+    bool setImage(const std::string& filePath);
 
-    bool setImageWithData(QImage& img);
-    void setImageWithPointer(QImage* img);
-    void setImageWithFilePath(QString& path);
     void setEnableOnlyShowImage(bool flag = false);
 
     // 发送点击位置坐标信号默认关闭，使用前需要开启
@@ -123,24 +121,6 @@ protected:
     void getImageLeftTopRelativePosInWidget(const int x, const int y, double& returnX, double& returnY);
 
 private:
-    void updateZoomedImage();
-    void imageZoomOut();
-    void imageZoomIn();
-    void initializeContextmenu();
-    void emitLeftClickedSignals(QMouseEvent* e);
-    QPoint getCursorPosInImage(const QImage& originalImage, const QImage& zoomedImage, const QPoint& imageLeftTopPos, const QPoint& cursorPos);
-    QPoint getCursorPosInZoomedImage(QPoint cursorPos);
-    void setDefaultParameters();
-    QPoint getPutImageInCenterPos(const QImage& showImage, const QWidget *ImageWidget);
-
-    void wheelEvent(QWheelEvent* e);
-    void mouseMoveEvent(QMouseEvent* e);
-    void mousePressEvent(QMouseEvent* e);
-    void mouseReleaseEvent(QMouseEvent* e);
-    void paintEvent(QPaintEvent* e);
-    void contextMenuEvent(QContextMenuEvent* e);
-    void resizeEvent(QResizeEvent* e);
-
     static const QImage VOID_QIMAGE;
     QImage qImgContainer;
     QImage qImgZoomedContainer;
@@ -159,7 +139,6 @@ private:
     // status flags
     bool isImageLoaded = false;
     bool isSelectMode = false;
-    bool isImageCloned = false;
     bool isImageDragged = false;
     bool isImageDragging = false;
     bool isZoomedParametersChanged = false;
@@ -184,6 +163,26 @@ private:
     QAction* mActionEnableZoom = nullptr;
     QAction* mActionImageAutoFitWidget = nullptr;
     QAction* mActionLoadImageWithDefaultConfig = nullptr;
+
+    void updateZoomedImage();
+    void imageZoomOut();
+    void imageZoomIn();
+    void initializeContextmenu();
+    void emitLeftClickedSignals(QMouseEvent* e);
+    QPoint getCursorPosInImage(const QImage& originalImage, const QImage& zoomedImage, const QPoint& imageLeftTopPos, const QPoint& cursorPos);
+    QPoint getCursorPosInZoomedImage(QPoint cursorPos);
+    void setDefaultParameters();
+    QPoint getPutImageInCenterPos(const QImage& showImage, const QWidget* ImageWidget);
+    void initShowImage();
+    bool loadImageFromPath(const QString& filePath);
+
+    void wheelEvent(QWheelEvent* e);
+    void mouseMoveEvent(QMouseEvent* e);
+    void mousePressEvent(QMouseEvent* e);
+    void mouseReleaseEvent(QMouseEvent* e);
+    void paintEvent(QPaintEvent* e);
+    void contextMenuEvent(QContextMenuEvent* e);
+    void resizeEvent(QResizeEvent* e);
 };
 
 #endif // IMAGEWIDGET_H

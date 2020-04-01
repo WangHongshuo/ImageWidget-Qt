@@ -12,6 +12,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <math.h>
+#include <string>
 
 const QImage ImageWidget::VOID_QIMAGE = QImage();
 
@@ -402,58 +403,54 @@ ImageWidget::~ImageWidget() {}
 
 bool ImageWidget::setImage(const QImage& img, bool isDeepCopy)
 {
-    // 默认使用QImage的浅拷贝，自动管理QImage的data引用，避免传入局部变量造成crash
+    isImageLoaded = false;
+    // 默认使用QImage的浅拷贝，自动管理QImage中data引用，避免使用指针，传入局部变量造成crash
     if (isDeepCopy)
         qImgContainer = img.copy();
     else
         qImgContainer = img;
 
     if (img.isNull()) {
-        isImageLoaded = false;
         return false;
     }
     isImageLoaded = true;
+    initShowImage();
+    return true;
+}
+
+bool ImageWidget::setImage(const QString& filePath) { return loadImageFromPath(filePath); }
+
+bool ImageWidget::setImage(const std::string& filePath) { return loadImageFromPath(QString::fromStdString(filePath)); }
+
+bool ImageWidget::loadImageFromPath(const QString& filePath)
+{
+    isImageLoaded = false;
+    if (filePath.isEmpty() || filePath.isNull()) {
+        return false;
+    }
+    qImgContainer.load(filePath);
+    if (qImgContainer.isNull()) {
+        return false;
+    }
+    isImageLoaded = true;
+    initShowImage();
+    return true;
+}
+
+void ImageWidget::initShowImage()
+{
     qImgZoomedContainer = qImgContainer.copy();
     updateZoomedImage();
     if (enableLoadImageWithDefaultConfig)
         setDefaultParameters();
     update();
-    return true;
-}
-
-bool ImageWidget::setImage(const QString& filePath) {}
-
-void ImageWidget::setImageWithFilePath(QString& path)
-{
-    if (!isImageCloned) {
-        isImageCloned = true;
-    }
-    if (path.isEmpty() || path.isNull()) {
-        isImageLoaded = false;
-        return;
-    } else {
-        qImgContainer.load(path);
-        if (qImgContainer.isNull()) {
-            isImageLoaded = false;
-            return;
-        }
-        isImageLoaded = true;
-        qImgZoomedContainer = qImgContainer.copy();
-        updateZoomedImage();
-        if (enableLoadImageWithDefaultConfig)
-            setDefaultParameters();
-        update();
-    }
 }
 
 void ImageWidget::clear()
 {
     if (isImageLoaded) {
         isImageLoaded = false;
-        if (isImageCloned) {
-            qImgContainer = VOID_QIMAGE;
-            isImageCloned = false;
-        }
+        qImgContainer = VOID_QIMAGE;
 
         lastZoomedImageSize = QSize(0, 0);
         imageTopLeftRelativePosInWdigetX = 0.0;
