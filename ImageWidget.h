@@ -7,6 +7,7 @@
 
 #include <QMenu>
 #include <QWidget>
+#include <QPainter>
 
 #ifndef IMAGEWIDGET_H
 #define IMAGEWIDGET_H
@@ -118,26 +119,24 @@ private slots:
     void selectModeExit();
 
 protected:
-    void getImageLeftTopRelativePosInWidget(const int x, const int y, double& returnX, double& returnY);
 
 private:
+    // 静态空图像 用于释放内存
     static const QImage VOID_QIMAGE;
+    // 原始图像
     QImage qImgContainer;
+    // 缩放后的图像
     QImage qImgZoomedContainer;
 
     QSize lastZoomedImageSize = QSize(0, 0);
 
-    double imageTopLeftRelativePosInWdigetX = 0.0;
-    double imageTopLeftRelativePosInWdigetY = 0.0;
-
     double zoomScale = 1.0;
 
-    QPoint mouseLeftClickedPos = QPoint(0, 0);
+    QPoint mouseLeftKeyPressDownPos = QPoint(0, 0);
     QPoint drawImageTopLeftLastPos = QPoint(0, 0);
     QPoint drawImageTopLeftPos = QPoint(0, 0);
 
     // status flags
-    bool isImageLoaded = false;
     bool isSelectMode = false;
     bool isImageDragged = false;
     bool isImageDragging = false;
@@ -172,9 +171,11 @@ private:
     QPoint getCursorPosInImage(const QImage& originalImage, const QImage& zoomedImage, const QPoint& imageLeftTopPos, const QPoint& cursorPos);
     QPoint getCursorPosInZoomedImage(QPoint cursorPos);
     void setDefaultParameters();
-    QPoint getPutImageInCenterPos(const QImage& showImage, const QWidget* ImageWidget);
+    QPoint getImageTopLeftPosWhenShowInCenter(const QImage& img, const QWidget* iw);
+    // R1
     void initShowImage();
     bool loadImageFromPath(const QString& filePath);
+    void setImageAttributeWithAutoFitFlag(bool enableAutoFit);
 
     void wheelEvent(QWheelEvent* e);
     void mouseMoveEvent(QMouseEvent* e);
