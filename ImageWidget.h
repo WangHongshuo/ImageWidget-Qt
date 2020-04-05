@@ -15,6 +15,8 @@
 #ifndef SELECTRECT_H
 #define SELECTERCT_H
 
+// Common function
+
 class SelectRect : public QWidget {
     Q_OBJECT
 public:
@@ -102,8 +104,8 @@ public:
 
 signals:
     void sendParentWidgetSizeChangedSignal();
-    void sendLeftClickedPosInWidget(int x, int y);
-    void sendLeftClickedPosInImage(int x, int y);
+    void sendLeftClickedPosInWidgetSignal(int x, int y);
+    void sendLeftClickedPosInImageSignal(int x, int y);
 
 public slots:
     void clear();
@@ -115,8 +117,10 @@ public slots:
 private slots:
     void resetImageWidget();
     void save();
-    void select();
+    void createSelectRectInWidget();
     void selectModeExit();
+    // R1
+    void updateImageWidget();
 
 protected:
 
@@ -167,9 +171,8 @@ private:
     void imageZoomOut();
     void imageZoomIn();
     void initializeContextmenu();
-    void emitLeftClickedSignals(QMouseEvent* e);
+    void sendLeftClickedSignals(QMouseEvent* e);
     QPoint getCursorPosInImage(const QImage& originalImage, const QImage& zoomedImage, const QPoint& imageLeftTopPos, const QPoint& cursorPos);
-    QPoint getCursorPosInZoomedImage(QPoint cursorPos);
     void setDefaultParameters();
     QPoint getImageTopLeftPosWhenShowInCenter(const QImage& img, const QWidget* iw);
     // R1

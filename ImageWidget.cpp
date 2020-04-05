@@ -455,7 +455,7 @@ void ImageWidget::initShowImage()
     if (enableLoadImageWithDefaultConfig) {
         setDefaultParameters();
     }
-    update();
+    updateImageWidget();
 }
 
 void ImageWidget::clear()
@@ -467,7 +467,7 @@ void ImageWidget::clear()
         mouseLeftKeyPressDownPos = QPoint(0, 0);
         drawImageTopLeftLastPos = QPoint(0, 0);
         drawImageTopLeftPos = QPoint(0, 0);
-        update();
+        updateImageWidget();
     }
 }
 
@@ -522,12 +522,11 @@ void ImageWidget::wheelEvent(QWheelEvent* e)
         int numDegrees = e->delta();
         if (numDegrees > 0) {
             imageZoomOut();
-        }
-        if (numDegrees < 0) {
+        } else {
             imageZoomIn();
         }
         updateZoomedImage();
-        update();
+        updateImageWidget();
     }
 }
 
@@ -554,7 +553,7 @@ void ImageWidget::mousePressEvent(QMouseEvent* e)
 void ImageWidget::mouseReleaseEvent(QMouseEvent* e)
 {
     if (mouseStatus == Qt::LeftButton && !isImageDragging) {
-        emitLeftClickedSignals(e);
+        sendLeftClickedSignals(e);
         mouseStatus = Qt::NoButton;
     }
     if (!qImgContainer.isNull() && !enableOnlyShowImage && enableDragImage) {
@@ -576,7 +575,7 @@ void ImageWidget::mouseMoveEvent(QMouseEvent* e)
             // e->pos()为当前鼠标坐标 转换为相对移动距离
             drawImageTopLeftPos = drawImageTopLeftLastPos + (e->pos() - mouseLeftKeyPressDownPos);
             isImageDragging = true;
-            update();
+            updateImageWidget();
         }
     }
 }
@@ -620,7 +619,7 @@ void ImageWidget::resetImageWidget()
     zoomScale = 1.0;
     setImageAttributeWithAutoFitFlag(enableAutoFitWidget);
     isImageDragged = false;
-    update();
+    updateImageWidget();
 }
 
 void ImageWidget::imageZoomOut()
@@ -639,7 +638,7 @@ void ImageWidget::imageZoomIn()
     }
 }
 
-void ImageWidget::select()
+void ImageWidget::createSelectRectInWidget()
 {
     if (!qImgContainer.isNull()) {
         isSelectMode = true;
@@ -679,21 +678,21 @@ void ImageWidget::initializeContextmenu()
 
     connect(mActionResetParameters, SIGNAL(triggered()), this, SLOT(resetImageWidget()));
     connect(mActionSave, SIGNAL(triggered()), this, SLOT(save()));
-    connect(mActionSelect, SIGNAL(triggered()), this, SLOT(select()));
+    connect(mActionSelect, SIGNAL(triggered()), this, SLOT(createSelectRectInWidget()));
     connect(mActionEnableDrag, SIGNAL(toggled(bool)), this, SLOT(setEnableDrag(bool)));
     connect(mActionEnableZoom, SIGNAL(toggled(bool)), this, SLOT(setEnableZoom(bool)));
     connect(mActionImageAutoFitWidget, SIGNAL(toggled(bool)), this, SLOT(setEnableAutoFit(bool)));
     connect(mActionLoadImageWithDefaultConfig, SIGNAL(toggled(bool)), this, SLOT(setEnableLoadImageWithDefaultConfig(bool)));
 }
 
-void ImageWidget::emitLeftClickedSignals(QMouseEvent* e)
+void ImageWidget::sendLeftClickedSignals(QMouseEvent* e)
 {
     if (enableSendLeftClickedPosInWidget)
-        emit sendLeftClickedPosInWidget(e->x(), e->y());
+        emit sendLeftClickedPosInWidgetSignal(e->x(), e->y());
 
     if (enableSendLeftClickedPosInImage) {
         if (qImgContainer.isNull()) {
-            emit sendLeftClickedPosInImage(-1, -1);
+            emit sendLeftClickedPosInImageSignal(-1, -1);
         } else {
             QPoint cursorPosInImage = getCursorPosInImage(qImgContainer, qImgZoomedContainer, drawImageTopLeftPos, e->pos());
             // 如果光标不在图像上则返回-1
@@ -702,7 +701,7 @@ void ImageWidget::emitLeftClickedSignals(QMouseEvent* e)
                 cursorPosInImage.setX(-1);
                 cursorPosInImage.setY(-1);
             }
-            emit sendLeftClickedPosInImage(cursorPosInImage.x(), cursorPosInImage.y());
+            emit sendLeftClickedPosInImageSignal(cursorPosInImage.x(), cursorPosInImage.y());
         }
     }
 }
@@ -720,12 +719,6 @@ QPoint ImageWidget::getCursorPosInImage(const QImage& originalImage, const QImag
     return resPoint;
 }
 
-QPoint ImageWidget::getCursorPosInZoomedImage(QPoint cursorPos)
-{
-    // 计算当前光标在缩放后图像坐标系中相对于图像原点的位置
-    return cursorPos - drawImageTopLeftLastPos;
-}
-
 void ImageWidget::save()
 {
     if (!qImgContainer.isNull()) {
@@ -739,27 +732,36 @@ void ImageWidget::save()
 
 void ImageWidget::selectModeExit() { isSelectMode = false; }
 
+void ImageWidget::updateImageWidget()
+{
+    QRect qImgZoomedRect = QRect(drawImageTopLeftPos, qImgZoomedContainer.size());
+    // 四周预留10 pixel
+    QRect imageWidgetRect = QRect(-10, -10, this->width() + 20, this->height() + 20);
+    // 若图像不在ImageWidget区域 没必要执行update()或repaint()
+    if (imageWidgetRect.intersects(qImgZoomedRect)) {
+        update();
+    }
+}
+
 void ImageWidget::updateZoomedImage()
 {
-    QPoint cursorPosInWidget, cursorPosInImage;
     // 图像为空直接返回
     if (qImgContainer.isNull())
         return;
     if (isZoomedParametersChanged) {
         lastZoomedImageSize = qImgZoomedContainer.size();
-        // 获取当前光标并计算出光标在图像中的位置
-        cursorPosInWidget = this->mapFromGlobal(QCursor::pos());
-        cursorPosInImage = getCursorPosInImage(qImgContainer, qImgZoomedContainer, drawImageTopLeftPos, cursorPosInWidget);
     }
     // 减少拖动带来的QImage::scaled
-    if (enableAutoFitWidget)
+    if (enableAutoFitWidget) {
         qImgZoomedContainer = qImgContainer.scaled(this->width() * zoomScale, this->height() * zoomScale, Qt::KeepAspectRatio);
-    else
+    } else {
         qImgZoomedContainer = qImgContainer.scaled(qImgContainer.width() * zoomScale, qImgContainer.height() * zoomScale, Qt::KeepAspectRatio);
-
+    }
     if (isZoomedParametersChanged) {
         QSize zoomedImageChanged = lastZoomedImageSize - qImgZoomedContainer.size();
-
+        // 获取当前光标并计算出光标在图像中的位置
+        QPoint cursorPosInWidget = this->mapFromGlobal(QCursor::pos());
+        QPoint cursorPosInImage = getCursorPosInImage(qImgContainer, qImgZoomedContainer, drawImageTopLeftPos, cursorPosInWidget);
         // 根据光标在图像的位置进行调整左上绘图点位置
         drawImageTopLeftPos += QPoint(int(double(zoomedImageChanged.width()) * double(cursorPosInImage.x()) / double(qImgContainer.width() - 1)),
             int(double(zoomedImageChanged.height()) * double(cursorPosInImage.y()) / double(qImgContainer.height() - 1)));
