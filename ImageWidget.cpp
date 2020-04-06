@@ -762,7 +762,19 @@ void ImageWidget::updateZoomedImage()
         // 获取当前光标并计算出光标在图像中的位置
         QPoint cursorPosInWidget = this->mapFromGlobal(QCursor::pos());
         QPoint cursorPosInImage = getCursorPosInImage(qImgContainer, qImgZoomedContainer, drawImageTopLeftPos, cursorPosInWidget);
-        // 根据光标在图像的位置进行调整左上绘图点位置
+        if (cursorPosInImage.x() < 0) {
+            cursorPosInImage.setX(0);
+        }
+        if (cursorPosInImage.y() < 0) {
+            cursorPosInImage.setY(0);
+        }
+        if (cursorPosInImage.x() > qImgContainer.width()) {
+            cursorPosInImage.setX(qImgContainer.width() - 1);
+        }
+        if (cursorPosInImage.y() > qImgContainer.height()) {
+            cursorPosInImage.setY(qImgContainer.height() - 1);
+        }
+        // 根据光标在图像的位置进行调整左上绘图点位置 保持鼠标悬停点为缩放中心点
         drawImageTopLeftPos += QPoint(int(double(zoomedImageChanged.width()) * double(cursorPosInImage.x()) / double(qImgContainer.width() - 1)),
             int(double(zoomedImageChanged.height()) * double(cursorPosInImage.y()) / double(qImgContainer.height() - 1)));
 
