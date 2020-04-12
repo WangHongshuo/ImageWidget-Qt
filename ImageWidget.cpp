@@ -437,14 +437,17 @@ void ImageWidget::setImageAttributeWithAutoFitFlag(bool enableAutoFit)
 {
     if (enableAutoFit) {
         // 根据Widget大小缩放图像
-        qImgZoomedContainer = qImgContainer.scaled(this->width() * zoomScale, this->height() * zoomScale, Qt::KeepAspectRatio);
-        // 计算图像在Widget中显示的左上坐标
-        drawImageTopLeftPos = getImageTopLeftPosWhenShowInCenter(qImgZoomedContainer, this);
+        qImgZoomedSize = qImgContainer.size();
+        zoomScale = qImgZoomedSize.width() / qImgContainer.width();
+        qImgZoomedSize.scale(this->width(), this->height(), Qt::KeepAspectRatio);
+        qImgZoomedContainer = qImgContainer.scaled(qImgZoomedSize);
     } else {
+        qImgZoomedSize = qImgZoomedContainer.size();
+        zoomScale = 1.0;
         qImgZoomedContainer = qImgContainer;
-        drawImageTopLeftPos.setX(0);
-        drawImageTopLeftPos.setY(0);
     }
+    // 计算图像在Widget中显示的左上坐标
+    drawImageTopLeftPos = getImageTopLeftPosWhenShowInCenter(qImgZoomedContainer, this);
 }
 
 void ImageWidget::initShowImage()
@@ -499,6 +502,32 @@ ImageWidget* ImageWidget::setEnableLoadImageWithDefaultConfig(bool flag)
 {
     enableLoadImageWithDefaultConfig = flag;
     mActionLoadImageWithDefaultConfig->setChecked(enableLoadImageWithDefaultConfig);
+    return this;
+}
+
+ImageWidget* ImageWidget::setMaxZoomScale(double scale)
+{
+    MAX_ZOOM_SCALE = scale;
+    return this;
+}
+
+ImageWidget* ImageWidget::setMinZoomScale(double scale)
+{
+    MIN_ZOOM_SCALE = scale;
+    return this;
+}
+
+ImageWidget* ImageWidget::setMaxZoomedImageSize(int width, int height)
+{
+    MAX_ZOOMED_IMG_SIZE.setWidth(width);
+    MAX_ZOOMED_IMG_SIZE.setHeight(height);
+    return this;
+}
+
+ImageWidget *ImageWidget::setMinZoomedImageSize(int width, int height)
+{
+    MIN_ZOOMED_IMG_SIZE.setWidth(width);
+    MIN_ZOOMED_IMG_SIZE.setHeight(height);
     return this;
 }
 
@@ -570,6 +599,7 @@ void ImageWidget::mouseReleaseEvent(QMouseEvent* e)
 
 void ImageWidget::mouseMoveEvent(QMouseEvent* e)
 {
+    // TODO: 在图像移动出Widget后，限定drawImageTopLeftPos，防止图像飞出Widget太远
     if (!qImgContainer.isNull() && !enableOnlyShowImage && enableDragImage) {
         if (mouseStatus == Qt::LeftButton) {
             // e->pos()为当前鼠标坐标 转换为相对移动距离
@@ -616,7 +646,6 @@ void ImageWidget::resizeEvent(QResizeEvent* e)
 
 void ImageWidget::resetImageWidget()
 {
-    zoomScale = 1.0;
     setImageAttributeWithAutoFitFlag(enableAutoFitWidget);
     isImageDragged = false;
     updateImageWidget();
@@ -624,7 +653,8 @@ void ImageWidget::resetImageWidget()
 
 void ImageWidget::imageZoomOut()
 {
-    if (zoomScale <= 8) {
+    // TODO: 使用scale和size共同限定
+    if (zoomScale < MAX_ZOOM_SCALE) {
         zoomScale *= 1.1;
         isZoomedParametersChanged = true;
     }
@@ -632,7 +662,8 @@ void ImageWidget::imageZoomOut()
 
 void ImageWidget::imageZoomIn()
 {
-    if (zoomScale >= 0.05) {
+    // TODO: 使用scale和size共同限定
+    if (zoomScale > MIN_ZOOM_SCALE) {
         zoomScale *= 1.0 / 1.1;
         isZoomedParametersChanged = true;
     }
@@ -757,6 +788,7 @@ void ImageWidget::updateZoomedImage()
     } else {
         qImgZoomedContainer = qImgContainer.scaled(qImgContainer.width() * zoomScale, qImgContainer.height() * zoomScale, Qt::KeepAspectRatio);
     }
+    // TODO: 缩放过程中图像位置应不变
     if (isZoomedParametersChanged) {
         QSize zoomedImageChanged = lastZoomedImageSize - qImgZoomedContainer.size();
         // 获取当前光标并计算出光标在图像中的位置
@@ -790,20 +822,18 @@ void ImageWidget::setDefaultParameters()
     if (!qImgContainer.isNull()) {
         // 首先恢复zoomedImage大小再调整drawPos
         updateZoomedImage();
-        drawImageTopLeftPos.setX(0);
-        drawImageTopLeftPos.setY(0);
+        drawImageTopLeftPos = getImageTopLeftPosWhenShowInCenter(qImgZoomedContainer, this);
         drawImageTopLeftLastPos = drawImageTopLeftPos;
     }
 }
 
 QPoint ImageWidget::getImageTopLeftPosWhenShowInCenter(const QImage& img, const QWidget* iw)
 {
-    QPoint resPoint;
+    QPoint resPoint(0, 0);
     if (img.width() < iw->width()) {
         resPoint.setX((iw->width() - img.width()) / 2);
-        resPoint.setY(0);
-    } else {
-        resPoint.setX(0);
+    }
+    if (img.height() < iw->height()) {
         resPoint.setY((iw->height() - img.height()) / 2);
     }
     return resPoint;

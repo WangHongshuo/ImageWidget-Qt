@@ -113,6 +113,10 @@ public slots:
     ImageWidget* setEnableZoom(bool flag = true);
     ImageWidget* setEnableAutoFit(bool flag = true);
     ImageWidget* setEnableLoadImageWithDefaultConfig(bool flag = false);
+    ImageWidget* setMaxZoomScale(double scale);
+    ImageWidget* setMinZoomScale(double scale);
+    ImageWidget* setMaxZoomedImageSize(int width, int height);
+    ImageWidget* setMinZoomedImageSize(int width, int height);
 
 private slots:
     void resetImageWidget();
@@ -127,11 +131,18 @@ protected:
 private:
     // 静态空图像 用于释放内存
     static const QImage VOID_QIMAGE;
+    // 放大倍率
+    double MAX_ZOOM_SCALE = 20.0;
+    double MIN_ZOOM_SCALE = 0.04;
+    // 图像最大尺寸
+    QSize MAX_ZOOMED_IMG_SIZE = QSize(100000, 10000);
+    // 图像最小尺寸
+    QSize MIN_ZOOMED_IMG_SIZE = QSize(10, 10);
     // 原始图像
     QImage qImgContainer;
     // 缩放后的图像
     QImage qImgZoomedContainer;
-
+    QSize qImgZoomedSize;
     QSize lastZoomedImageSize = QSize(0, 0);
 
     double zoomScale = 1.0;
