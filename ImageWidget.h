@@ -138,6 +138,8 @@ private:
     QSize MAX_ZOOMED_IMG_SIZE = QSize(100000, 10000);
     // 图像最小尺寸
     QSize MIN_ZOOMED_IMG_SIZE = QSize(10, 10);
+    // Paint区域偏移量
+    int PAINT_AREA_OFFEST = -30;
     // 原始图像
     QImage qImgContainer;
     // 缩放后的图像
@@ -145,6 +147,10 @@ private:
     QSize qImgZoomedSize;
     QSize lastZoomedImageSize = QSize(0, 0);
 
+    // ImageWidge Paint区域
+    QRect imageWidgetRect;
+    // Zoomed Img区域
+    QRect qImgZoomedRect;
     double zoomScale = 1.0;
 
     QPoint mouseLeftKeyPressDownPos = QPoint(0, 0);
@@ -153,7 +159,7 @@ private:
 
     // status flags
     bool isSelectMode = false;
-    bool isImageDragged = false;
+    bool isImagePosChanged = false;
     bool isImageDragging = false;
     bool isZoomedParametersChanged = false;
 
@@ -190,6 +196,7 @@ private:
     void initShowImage();
     bool loadImageFromPath(const QString& filePath);
     void setImageAttributeWithAutoFitFlag(bool enableAutoFit);
+    void fixDrawImageTopLeftPos(const QRect& imageWidgetRect, const QSize &zoomedImgSize, QRect& qImgZoomedRect, QPoint &drawImageTopLeftPos);
 
     void wheelEvent(QWheelEvent* e);
     void mouseMoveEvent(QMouseEvent* e);
