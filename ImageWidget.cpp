@@ -671,6 +671,8 @@ void ImageWidget::resizeEvent(QResizeEvent* e)
         }
         if (isSelectMode)
             emit sendParentWidgetSizeChangedSignal();
+        updateImageWidget();
+        drawImageTopLeftLastPos = drawImageTopLeftPos;
     }
 }
 
@@ -844,9 +846,8 @@ void ImageWidget::updateZoomedImage()
             isImagePosChanged = true;
         }
         drawImageTopLeftLastPos = drawImageTopLeftPos;
-
-        isZoomedParametersChanged = false;
     }
+    isZoomedParametersChanged = false;
 }
 
 void ImageWidget::setDefaultParameters()
