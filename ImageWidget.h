@@ -141,16 +141,16 @@ private:
     // Paint区域偏移量
     int PAINT_AREA_OFFEST = -30;
     // 原始图像
-    QImage qImgContainer;
-    // 缩放后的图像
-    QImage qImgZoomedContainer;
-    QSize qImgZoomedSize;
-    QSize lastZoomedImageSize = QSize(0, 0);
+    QImage inputImg;
+    // Paint图像
+    QImage paintImg;
+    QSize paintImgSize;
+    QSize lastPaintImgSize = QSize(0, 0);
 
     // ImageWidge Paint区域
-    QRect imageWidgetRect;
+    QRect imageWidgetPaintRect;
     // Zoomed Img区域
-    QRect qImgZoomedRect;
+    QRect paintImgRect;
     double zoomScale = 1.0;
 
     QPoint mouseLeftKeyPressDownPos = QPoint(0, 0);
@@ -196,7 +196,8 @@ private:
     void initShowImage();
     bool loadImageFromPath(const QString& filePath);
     void setImageAttributeWithAutoFitFlag(bool enableAutoFit);
-    void fixDrawImageTopLeftPos(const QRect& imageWidgetRect, const QSize &zoomedImgSize, QRect& qImgZoomedRect, QPoint &drawImageTopLeftPos);
+    void fixDrawImageTopLeftPosOutterMode(const QRect& imageWidgetPaintRect, const QSize &zoomedImgSize, QRect& paintImgRect);
+    void fixDrawImageTopLeftPosInnerMode(const QRect& imageWidgetPaintRect, const QSize &zoomedImgSize, QRect& paintImgRect);
 
     void wheelEvent(QWheelEvent* e);
     void mouseMoveEvent(QMouseEvent* e);
