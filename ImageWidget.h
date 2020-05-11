@@ -6,8 +6,8 @@
 #endif
 
 #include <QMenu>
-#include <QWidget>
 #include <QPainter>
+#include <QWidget>
 
 #ifndef IMAGEWIDGET_H
 #define IMAGEWIDGET_H
@@ -117,6 +117,7 @@ public slots:
     ImageWidget* setMinZoomScale(double scale);
     ImageWidget* setMaxZoomedImageSize(int width, int height);
     ImageWidget* setMinZoomedImageSize(int width, int height);
+    ImageWidget *setPaintAreaOffset(int offset);
 
 private slots:
     void resetImageWidget();
@@ -127,7 +128,6 @@ private slots:
     void updateImageWidget();
 
 protected:
-
 private:
     // 静态空图像 用于释放内存
     static const QImage VOID_QIMAGE;
@@ -139,7 +139,7 @@ private:
     // 图像最小尺寸
     QSize MIN_ZOOMED_IMG_SIZE = QSize(10, 10);
     // Paint区域偏移量
-    int PAINT_AREA_OFFEST = -30;
+    int PAINT_AREA_OFFEST = 0;
     // 原始图像
     QImage inputImg;
     // Paint图像
@@ -149,8 +149,9 @@ private:
 
     // ImageWidge Paint区域
     QRect imageWidgetPaintRect;
-    // Zoomed Img区域
+    // 缩放后图像Paint区域
     QRect paintImgRect;
+
     double zoomScale = 1.0;
 
     QPoint mouseLeftKeyPressDownPos = QPoint(0, 0);
@@ -196,8 +197,8 @@ private:
     void initShowImage();
     bool loadImageFromPath(const QString& filePath);
     void setImageAttributeWithAutoFitFlag(bool enableAutoFit);
-    void fixDrawImageTopLeftPosOutterMode(const QRect& imageWidgetPaintRect, const QSize &zoomedImgSize, QRect& paintImgRect);
-    void fixDrawImageTopLeftPosInnerMode(const QRect& imageWidgetPaintRect, const QSize &zoomedImgSize, QRect& paintImgRect);
+    void fixDrawImageTopLeftPosOutterMode(const QRect& imageWidgetPaintRect, const QSize& zoomedImgSize, QRect& paintImgRect);
+    void fixDrawImageTopLeftPosInnerMode(const QRect& imageWidgetPaintRect, const QSize& zoomedImgSize, QRect& paintImgRect);
 
     void wheelEvent(QWheelEvent* e);
     void mouseMoveEvent(QMouseEvent* e);

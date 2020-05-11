@@ -467,12 +467,13 @@ void ImageWidget::clear()
 {
     if (!inputImg.isNull()) {
         inputImg = VOID_QIMAGE;
+        paintImg = VOID_QIMAGE;
         lastPaintImgSize = QSize(0, 0);
         zoomScale = 1.0;
         mouseLeftKeyPressDownPos = QPoint(0, 0);
         drawImageTopLeftLastPos = QPoint(0, 0);
         drawImageTopLeftPos = QPoint(0, 0);
-        updateImageWidget();
+        update();
     }
 }
 
@@ -530,6 +531,12 @@ ImageWidget* ImageWidget::setMinZoomedImageSize(int width, int height)
 {
     MIN_ZOOMED_IMG_SIZE.setWidth(width);
     MIN_ZOOMED_IMG_SIZE.setHeight(height);
+    return this;
+}
+
+ImageWidget* ImageWidget::setPaintAreaOffset(int offset)
+{
+    this->PAINT_AREA_OFFEST = offset;
     return this;
 }
 
@@ -607,20 +614,22 @@ void ImageWidget::fixDrawImageTopLeftPosOutterMode(const QRect& imageWidgetRect,
     if (imageWidgetRect.intersects(qImgZoomedRect)) {
         return;
     }
+    qDebug() << imageWidgetRect.topLeft() << imageWidgetRect.bottomRight();
+    qDebug() << qImgZoomedRect.topLeft() << qImgZoomedRect.bottomRight();
     // 计算坐标偏差并修正
-    int dx = std::max(0, std::max(imageWidgetRect.left() - qImgZoomedRect.right(), qImgZoomedRect.left() - imageWidgetRect.right()));
-    int dy = std::max(0, std::max(imageWidgetRect.top() - qImgZoomedRect.bottom(), qImgZoomedRect.top() - imageWidgetRect.bottom()));
     if (qImgZoomedRect.right() < imageWidgetRect.left()) {
-        qImgZoomedRect.setLeft(qImgZoomedRect.left() + dx);
-    } else {
-        qImgZoomedRect.setLeft(qImgZoomedRect.left() - dx);
+        qImgZoomedRect.moveRight(imageWidgetRect.left() - 1);
+    }
+    if (qImgZoomedRect.left() > imageWidgetRect.right()) {
+        qImgZoomedRect.moveLeft(imageWidgetRect.right() + 1);
     }
     if (qImgZoomedRect.bottom() < imageWidgetRect.top()) {
-        qImgZoomedRect.setTop(qImgZoomedRect.top() + dy);
-    } else {
-        qImgZoomedRect.setTop(qImgZoomedRect.top() - dy);
+        qImgZoomedRect.moveBottom(imageWidgetRect.top() - 1);
     }
-    qImgZoomedRect.setSize(zoomedImgSize);
+    if (qImgZoomedRect.top() > imageWidgetRect.bottom()) {
+        qImgZoomedRect.moveTop(imageWidgetRect.bottom() + 1);
+    }
+    qDebug() << "fixed: " << qImgZoomedRect.topLeft() << qImgZoomedRect.bottomRight();
 }
 
 void ImageWidget::fixDrawImageTopLeftPosInnerMode(const QRect& imageWidgetRect, const QSize& zoomedImgSize, QRect& qImgZoomedRect)
@@ -630,37 +639,37 @@ void ImageWidget::fixDrawImageTopLeftPosInnerMode(const QRect& imageWidgetRect, 
     qDebug() << qImgZoomedRect.topLeft() << qImgZoomedRect.bottomRight();
     if (zoomedImgSize.width() <= imageWidgetRect.width()) {
         if (qImgZoomedRect.left() < imageWidgetRect.left()) {
-            qImgZoomedRect.setLeft(imageWidgetRect.left());
+            qImgZoomedRect.moveLeft(imageWidgetRect.left());
         }
         if (qImgZoomedRect.right() > imageWidgetRect.right()) {
-            qImgZoomedRect.setLeft(imageWidgetRect.right() - qImgZoomedRect.width() + 1);
+            qImgZoomedRect.moveRight(imageWidgetRect.right());
         }
     }
     if (zoomedImgSize.height() <= imageWidgetRect.height()) {
         if (qImgZoomedRect.top() < imageWidgetRect.top()) {
-            qImgZoomedRect.setTop(imageWidgetRect.top());
+            qImgZoomedRect.moveTop(imageWidgetRect.top());
         }
         if (qImgZoomedRect.bottom() > imageWidgetRect.bottom()) {
-            qImgZoomedRect.setTop(imageWidgetRect.bottom() - qImgZoomedRect.height() + 1);
+            qImgZoomedRect.moveBottom(imageWidgetRect.bottom());
         }
     }
     if (zoomedImgSize.width() > imageWidgetRect.width()) {
         if (qImgZoomedRect.left() > imageWidgetRect.left()) {
-            qImgZoomedRect.setLeft(imageWidgetRect.left());
+            qImgZoomedRect.moveLeft(imageWidgetRect.left());
         }
         if (qImgZoomedRect.right() < imageWidgetRect.right()) {
-            qImgZoomedRect.setLeft(imageWidgetRect.right() - qImgZoomedRect.width() + 1);
+            qImgZoomedRect.moveRight(imageWidgetRect.right());
         }
     }
     if (zoomedImgSize.height() > imageWidgetRect.height()) {
         if (qImgZoomedRect.top() > imageWidgetRect.top()) {
-            qImgZoomedRect.setTop(imageWidgetRect.top());
+            qImgZoomedRect.moveTop(imageWidgetRect.top());
         }
         if (qImgZoomedRect.bottom() < imageWidgetRect.bottom()) {
-            qImgZoomedRect.setTop(imageWidgetRect.bottom() - qImgZoomedRect.height() + 1);
+            qImgZoomedRect.moveBottom(imageWidgetRect.bottom());
         }
     }
-    qDebug() << "fixed: " << qImgZoomedRect.topLeft() << qImgZoomedRect.bottomRight();
+    qDebug() << "fixed: " << qImgZoomedRect.topLeft() << qImgZoomedRect.bottomRight() << qImgZoomedRect.size();
 }
 
 void ImageWidget::mouseMoveEvent(QMouseEvent* e)
@@ -836,12 +845,9 @@ void ImageWidget::updateImageWidget()
 {
     paintImgRect.setTopLeft(drawImageTopLeftPos);
     paintImgRect.setSize(paintImg.size());
-    fixDrawImageTopLeftPosInnerMode(imageWidgetPaintRect, paintImg.size(), paintImgRect);
+    fixDrawImageTopLeftPosOutterMode(imageWidgetPaintRect, paintImg.size(), paintImgRect);
     drawImageTopLeftPos = paintImgRect.topLeft();
-    // 若图像不在ImageWidget区域 没必要执行update()或repaint()
-    if (this->rect().intersects(paintImgRect)) {
-        update();
-    }
+    update();
 }
 
 void ImageWidget::updateZoomedImage()
