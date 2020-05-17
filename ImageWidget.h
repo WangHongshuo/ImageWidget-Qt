@@ -66,7 +66,7 @@ private:
     QAction* mActionSaveZoomedImage = nullptr;
     QAction* mActionSaveOriginalImage = nullptr;
     QAction* mActionExit = nullptr;
-    enum { SR_NULL = -1, SR_CENTER, SR_TOPLEFT, SR_TOPRIGHT, SR_BOTTOMRIGHT, SR_BOTTOMLEFT, SR_TOP, SR_RIGHT, SR_BOTTOM, SR_LEFT, SR_ENTIRETY };
+    enum { SR_NULL = -1, SR_CENTER, SR_TOPLEFT, SR_TOPRIGHT, SR_BOTTOMRIGHT, SR_BOTTOMLEFT, SR_TOP, SR_RIGHT, SR_BOTTOM, SR_LEFT, SR_ENTIRETY, SR_TEST };
     // Widget中选中的范围
     QRect selectedRect[10];
     QRect lastSelectedRect;
@@ -130,7 +130,11 @@ private slots:
 protected:
 private:
     // 静态空图像 用于释放内存
-    static const QImage VOID_QIMAGE;
+    static const QImage NULL_QIMAGE;
+    // 静态变量 图像尺寸相关
+    static const QPoint NULL_POINT;
+    static const QSize NULL_SIZE;
+    static const QRect NULL_RECT;
     // 放大倍率
     double MAX_ZOOM_SCALE = 20.0;
     double MIN_ZOOM_SCALE = 0.04;
@@ -150,13 +154,12 @@ private:
     // ImageWidge Paint区域
     QRect imageWidgetPaintRect;
     // 缩放后图像Paint区域
-    QRect paintImgRect;
+    QRect paintImageRect;
 
     double zoomScale = 1.0;
 
     QPoint mouseLeftKeyPressDownPos = QPoint(0, 0);
-    QPoint drawImageTopLeftLastPos = QPoint(0, 0);
-    QPoint drawImageTopLeftPos = QPoint(0, 0);
+    QPoint paintImageLastTopLeft = QPoint(0, 0);
 
     // status flags
     bool isSelectMode = false;
@@ -197,8 +200,8 @@ private:
     void initShowImage();
     bool loadImageFromPath(const QString& filePath);
     void setImageAttributeWithAutoFitFlag(bool enableAutoFit);
-    void fixDrawImageTopLeftPosOutterMode(const QRect& imageWidgetPaintRect, const QSize& zoomedImgSize, QRect& paintImgRect);
-    void fixDrawImageTopLeftPosInnerMode(const QRect& imageWidgetPaintRect, const QSize& zoomedImgSize, QRect& paintImgRect);
+    void fixDrawImageTopLeftPosOutterMode(const QRect& imageWidgetPaintRect, QRect& paintImageRect);
+    void fixDrawImageTopLeftPosInnerMode(const QRect& imageWidgetPaintRect, QRect& paintImageRect);
 
     void wheelEvent(QWheelEvent* e);
     void mouseMoveEvent(QMouseEvent* e);
