@@ -88,6 +88,9 @@ private:
 class ImageWidget : public QWidget {
     Q_OBJECT
 public:
+    // 图像限定模式
+    enum RestrictMode { RM_INNER, RM_OUTTER };
+
     explicit ImageWidget(QWidget* parent = nullptr);
     ~ImageWidget();
     // 对外统一呈现setImage()接口
@@ -117,7 +120,8 @@ public slots:
     ImageWidget* setMinZoomScale(double scale);
     ImageWidget* setMaxZoomedImageSize(int width, int height);
     ImageWidget* setMinZoomedImageSize(int width, int height);
-    ImageWidget *setPaintAreaOffset(int offset);
+    ImageWidget* setPaintAreaOffset(int offset);
+    ImageWidget* setPaintImageRestrictMode(RestrictMode rm);
 
 private slots:
     void resetImageWidget();
@@ -148,8 +152,7 @@ private:
     QImage inputImg;
     // Paint图像
     QImage paintImg;
-    QSize paintImgSize;
-    QSize lastPaintImgSize = QSize(0, 0);
+    QSize lastPaintImgSize = NULL_SIZE;
 
     // ImageWidge Paint区域
     QRect imageWidgetPaintRect;
@@ -158,8 +161,8 @@ private:
 
     double zoomScale = 1.0;
 
-    QPoint mouseLeftKeyPressDownPos = QPoint(0, 0);
-    QPoint paintImageLastTopLeft = QPoint(0, 0);
+    QPoint mouseLeftKeyPressDownPos = NULL_POINT;
+    QPoint paintImageLastTopLeft = NULL_POINT;
 
     // status flags
     bool isSelectMode = false;
@@ -174,6 +177,7 @@ private:
     bool enableLoadImageWithDefaultConfig = false;
     bool enableSendLeftClickedPosInWidget = false;
     bool enableSendLeftClickedPosInImage = false;
+    RestrictMode restrictMode = RM_INNER;
 
     int mouseStatus = Qt::NoButton;
     // 1
@@ -200,8 +204,9 @@ private:
     void initShowImage();
     bool loadImageFromPath(const QString& filePath);
     void setImageAttributeWithAutoFitFlag(bool enableAutoFit);
-    void fixDrawImageTopLeftPosOutterMode(const QRect& imageWidgetPaintRect, QRect& paintImageRect);
-    void fixDrawImageTopLeftPosInnerMode(const QRect& imageWidgetPaintRect, QRect& paintImageRect);
+    void fixPaintImageTopLeft();
+    void fixPaintImageTopLeftInOutterMode(const QRect& imageWidgetPaintRect, QRect& paintImageRect);
+    void fixPaintImageTopLefInInnerMode(const QRect& imageWidgetPaintRect, QRect& paintImageRect);
 
     void wheelEvent(QWheelEvent* e);
     void mouseMoveEvent(QMouseEvent* e);

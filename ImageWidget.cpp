@@ -443,12 +443,8 @@ void ImageWidget::setImageAttributeWithAutoFitFlag(bool enableAutoFit)
 {
     if (enableAutoFit) {
         // 根据Widget大小缩放图像
-        paintImgSize = inputImg.size();
-        zoomScale = paintImgSize.width() / inputImg.width();
-        paintImgSize.scale(this->width(), this->height(), Qt::KeepAspectRatio);
-        paintImg = inputImg.scaled(paintImgSize);
+        paintImg = inputImg.scaled(this->width(), this->height(), Qt::KeepAspectRatio);
     } else {
-        paintImgSize = paintImg.size();
         zoomScale = 1.0;
         paintImg = inputImg;
     }
@@ -456,6 +452,15 @@ void ImageWidget::setImageAttributeWithAutoFitFlag(bool enableAutoFit)
     paintImageRect.setTopLeft(getImageTopLeftPosWhenShowInCenter(paintImg, this));
     paintImageRect.setSize(paintImg.size());
     paintImageLastTopLeft = paintImageRect.topLeft();
+}
+
+void ImageWidget::fixPaintImageTopLeft()
+{
+    if (restrictMode == RM_INNER) {
+        fixPaintImageTopLeftInOutterMode(imageWidgetPaintRect, paintImageRect);
+    } else {
+        fixPaintImageTopLefInInnerMode(imageWidgetPaintRect, paintImageRect);
+    }
 }
 
 void ImageWidget::initShowImage()
@@ -545,6 +550,12 @@ ImageWidget* ImageWidget::setPaintAreaOffset(int offset)
     return this;
 }
 
+ImageWidget* ImageWidget::setPaintImageRestrictMode(ImageWidget::RestrictMode rm)
+{
+    restrictMode = rm;
+    return this;
+}
+
 ImageWidget* ImageWidget::setEnableSendLeftClickedPosInWidget(bool flag)
 {
     enableSendLeftClickedPosInWidget = flag;
@@ -613,14 +624,8 @@ void ImageWidget::mouseReleaseEvent(QMouseEvent* e)
     }
 }
 
-void ImageWidget::fixDrawImageTopLeftPosOutterMode(const QRect& imageWidgetRect, QRect& qImgZoomedRect)
+void ImageWidget::fixPaintImageTopLeftInOutterMode(const QRect& imageWidgetRect, QRect& qImgZoomedRect)
 {
-    // 图像在ImageWidget区域内则不用修正
-    if (imageWidgetRect.intersects(qImgZoomedRect)) {
-        return;
-    }
-    qDebug() << imageWidgetRect.topLeft() << imageWidgetRect.bottomRight();
-    qDebug() << qImgZoomedRect.topLeft() << qImgZoomedRect.bottomRight();
     // 计算坐标偏差并修正
     if (qImgZoomedRect.right() < imageWidgetRect.left()) {
         qImgZoomedRect.moveRight(imageWidgetRect.left());
@@ -634,14 +639,11 @@ void ImageWidget::fixDrawImageTopLeftPosOutterMode(const QRect& imageWidgetRect,
     if (qImgZoomedRect.top() > imageWidgetRect.bottom()) {
         qImgZoomedRect.moveTop(imageWidgetRect.bottom());
     }
-    qDebug() << "fixed: " << qImgZoomedRect.topLeft() << qImgZoomedRect.bottomRight();
 }
 
-void ImageWidget::fixDrawImageTopLeftPosInnerMode(const QRect& imageWidgetRect, QRect& paintImageRect)
+void ImageWidget::fixPaintImageTopLefInInnerMode(const QRect& imageWidgetRect, QRect& paintImageRect)
 {
     // 计算坐标偏差并修正
-    qDebug() << imageWidgetRect.topLeft() << imageWidgetRect.bottomRight();
-    qDebug() << paintImageRect.topLeft() << paintImageRect.bottomRight();
     if (paintImageRect.width() <= imageWidgetRect.width()) {
         if (paintImageRect.left() < imageWidgetRect.left()) {
             paintImageRect.moveLeft(imageWidgetRect.left());
@@ -674,7 +676,6 @@ void ImageWidget::fixDrawImageTopLeftPosInnerMode(const QRect& imageWidgetRect, 
             paintImageRect.moveBottom(imageWidgetRect.bottom());
         }
     }
-    qDebug() << "fixed: " << paintImageRect.topLeft() << paintImageRect.bottomRight() << paintImageRect.size();
 }
 
 void ImageWidget::mouseMoveEvent(QMouseEvent* e)
@@ -715,15 +716,16 @@ void ImageWidget::resizeEvent(QResizeEvent* e)
     if (!inputImg.isNull()) {
         // 如果图像没有被拖拽或者缩放过 置中缩放
         if (!isImagePosChanged && enableAutoFitWidget) {
-            paintImg = inputImg.scaled(this->width() * zoomScale, this->height() * zoomScale, Qt::KeepAspectRatio);
+            paintImg = inputImg.scaled(this->width(), this->height(), Qt::KeepAspectRatio);
             paintImageRect.moveTopLeft(getImageTopLeftPosWhenShowInCenter(paintImg, this));
+            paintImageRect.setSize(paintImg.size());
             paintImageLastTopLeft = paintImageRect.topLeft();
         } else {
             // TODO: 拖动后的图像在ImageWidget尺寸发生变化后如何调整
         }
         if (isSelectMode)
             emit sendParentWidgetSizeChangedSignal();
-        updateImageWidget();
+        fixPaintImageTopLeft();
         paintImageLastTopLeft = paintImageRect.topLeft();
     }
 }
@@ -849,7 +851,7 @@ void ImageWidget::selectModeExit() { isSelectMode = false; }
 
 void ImageWidget::updateImageWidget()
 {
-    fixDrawImageTopLeftPosOutterMode(imageWidgetPaintRect, paintImageRect);
+    fixPaintImageTopLeft();
     update();
 }
 
