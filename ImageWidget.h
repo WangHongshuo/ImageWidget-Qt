@@ -12,25 +12,18 @@
 #ifndef IMAGEWIDGET_H
 #define IMAGEWIDGET_H
 
-#ifndef SELECTRECT_H
-#define SELECTERCT_H
+#ifndef IMAGEMARQUEES_H
+#define IMAGEMARQUEES_H
 
 // Common function
 
-class SelectRect : public QWidget {
+class ImageMarquees : public QWidget {
     Q_OBJECT
 public:
-    SelectRect(QWidget* parent = nullptr);
-    ~SelectRect();
+    ImageMarquees(QWidget* parent = nullptr);
+    ~ImageMarquees();
 
-    void setImage(QImage* img, QImage* zoomedImg, const QPoint& imageLeftTop)
-    {
-        image = img;
-        zoomedImage = zoomedImg;
-        drawImageTopLeftPos = imageLeftTop;
-        isLoadImage = true;
-    }
-    QPoint drawImageTopLeftPos = QPoint(-1, -1);
+    void setImage(QImage* inputImg, QImage* paintImg, const QPoint& paintImageTopLeft);
 
 protected:
 signals:
@@ -72,11 +65,11 @@ private:
     QRect lastSelectedRect;
     // Image中选中的范围
     QRect fixedRectInImage;
-
+    QPoint paintImageTopLeft = QPoint(-1, -1);
     QPoint mouseLeftClickedPos = QPoint(0, 0);
     int mouseStatus;
-    QImage* image = nullptr;
-    QImage* zoomedImage = nullptr;
+    QImage* inputImg = nullptr;
+    QImage* paintImg = nullptr;
     bool isLoadImage = false;
     bool isSelectedRectStable = false;
     bool isSelectedRectExisted = false;
@@ -115,7 +108,6 @@ public slots:
     ImageWidget* setEnableDrag(bool flag = true);
     ImageWidget* setEnableZoom(bool flag = true);
     ImageWidget* setEnableAutoFit(bool flag = true);
-    ImageWidget* setEnableLoadImageWithDefaultConfig(bool flag = false);
     ImageWidget* setMaxZoomScale(double scale);
     ImageWidget* setMinZoomScale(double scale);
     ImageWidget* setMaxZoomedImageSize(int width, int height);
@@ -190,7 +182,6 @@ private:
     QAction* mActionEnableDrag = nullptr;
     QAction* mActionEnableZoom = nullptr;
     QAction* mActionImageAutoFitWidget = nullptr;
-    QAction* mActionLoadImageWithDefaultConfig = nullptr;
 
     void updateZoomedImage();
     void imageZoomOut();

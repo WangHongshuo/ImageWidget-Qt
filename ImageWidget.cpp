@@ -22,7 +22,7 @@ const QPoint ImageWidget::NULL_POINT = QPoint(0, 0);
 const QSize ImageWidget::NULL_SIZE = QSize(0, 0);
 const QRect ImageWidget::NULL_RECT = QRect(0, 0, 0, 0);
 
-SelectRect::SelectRect(QWidget* parent)
+ImageMarquees::ImageMarquees(QWidget* parent)
     : QWidget(parent)
 {
     mouseStatus = Qt::NoButton;
@@ -43,23 +43,31 @@ SelectRect::SelectRect(QWidget* parent)
     this->setFocusPolicy(Qt::StrongFocus);
 }
 
-SelectRect::~SelectRect()
+ImageMarquees::~ImageMarquees()
 {
-    image = nullptr;
-    zoomedImage = nullptr;
+    inputImg = nullptr;
+    paintImg = nullptr;
     mMenu = nullptr;
 }
 
-void SelectRect::receiveParentSizeChangedSignal()
+void ImageMarquees::setImage(QImage* inputImg, QImage* paintImg, const QPoint& paintImageTopLeft)
+{
+    this->inputImg = inputImg;
+    this->paintImg = paintImg;
+    this->paintImageTopLeft = paintImageTopLeft;
+    isLoadImage = true;
+}
+
+void ImageMarquees::receiveParentSizeChangedSignal()
 {
     ImageWidget* parentWidget = static_cast<ImageWidget*>(this->parent());
     this->setGeometry(0, 0, parentWidget->width(), parentWidget->height());
     //    qDebug() << this->geometry();
-    drawImageTopLeftPos = parentWidget->getDrawImageTopLeftPos();
+    paintImageTopLeft = parentWidget->getDrawImageTopLeftPos();
     update();
 }
 
-void SelectRect::paintEvent(QPaintEvent* event)
+void ImageMarquees::paintEvent(QPaintEvent* event)
 {
     // 背景
     QPainterPath mask;
@@ -81,7 +89,7 @@ void SelectRect::paintEvent(QPaintEvent* event)
     }
 }
 
-void SelectRect::mousePressEvent(QMouseEvent* event)
+void ImageMarquees::mousePressEvent(QMouseEvent* event)
 {
     switch (event->button()) {
     case Qt::LeftButton:
@@ -101,7 +109,7 @@ void SelectRect::mousePressEvent(QMouseEvent* event)
     }
 }
 
-void SelectRect::mouseMoveEvent(QMouseEvent* event)
+void ImageMarquees::mouseMoveEvent(QMouseEvent* event)
 {
     if (mouseStatus == Qt::LeftButton) {
         isSelectedRectStable = false;
@@ -120,7 +128,7 @@ void SelectRect::mouseMoveEvent(QMouseEvent* event)
     }
 }
 
-void SelectRect::mouseReleaseEvent(QMouseEvent* event)
+void ImageMarquees::mouseReleaseEvent(QMouseEvent* event)
 {
     if (mouseStatus == Qt::LeftButton) {
         // 修正RectInfo::w和RectInfo::h为正
@@ -138,15 +146,15 @@ void SelectRect::mouseReleaseEvent(QMouseEvent* event)
     }
 }
 
-void SelectRect::contextMenuEvent(QContextMenuEvent* event)
+void ImageMarquees::contextMenuEvent(QContextMenuEvent* event)
 {
     mMenu->exec(QCursor::pos());
     mouseStatus = Qt::NoButton;
 }
 
-void SelectRect::wheelEvent(QWheelEvent* event) { eventFilter(this, event); }
+void ImageMarquees::wheelEvent(QWheelEvent* event) { eventFilter(this, event); }
 
-bool SelectRect::eventFilter(QObject* watched, QEvent* event)
+bool ImageMarquees::eventFilter(QObject* watched, QEvent* event)
 {
     if (event->type() == QEvent::KeyPress) {
         QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
@@ -168,14 +176,13 @@ bool SelectRect::eventFilter(QObject* watched, QEvent* event)
     return false;
 }
 
-void SelectRect::keyPressEvent(QKeyEvent* event) { eventFilter(this, event); }
+void ImageMarquees::keyPressEvent(QKeyEvent* event) { eventFilter(this, event); }
 
-QRect SelectRect::getRectInImage(const QImage* img, const QPoint& imgTopLeftPos, QRect rect)
+QRect ImageMarquees::getRectInImage(const QImage* img, const QPoint& imgTopLeftPos, QRect rect)
 {
     QRect returnRect;
     // 计算相对于图像内的坐标
-    returnRect.setTopLeft(rect.topLeft() - imgTopLeftPos);
-    returnRect.setSize(rect.size());
+    returnRect.moveTo(rect.topLeft() - imgTopLeftPos);
     // 限定截取范围在图像内 修正顶点
     if (returnRect.x() < 0) {
         // QRect::setX change the width
@@ -194,7 +201,7 @@ QRect SelectRect::getRectInImage(const QImage* img, const QPoint& imgTopLeftPos,
     return returnRect;
 }
 
-void SelectRect::getEdgeRect()
+void ImageMarquees::getEdgeRect()
 {
     // 边框宽
     int w = 5;
@@ -227,7 +234,7 @@ void SelectRect::getEdgeRect()
     selectedRect[SR_ENTIRETY].setBottomRight(selectedRect[SR_BOTTOMRIGHT].bottomRight());
 }
 
-int SelectRect::getSelectedAreaSubscript(QPoint cursorPos)
+int ImageMarquees::getSelectedAreaSubscript(QPoint cursorPos)
 {
     // 可用树结构减少if
     if (selectedRect[SR_CENTER].contains(cursorPos)) {
@@ -269,7 +276,7 @@ int SelectRect::getSelectedAreaSubscript(QPoint cursorPos)
     return SR_NULL;
 }
 
-void SelectRect::selectedRectChangeEvent(int SR_LOCATION, const QPoint& cursorPos)
+void ImageMarquees::selectedRectChangeEvent(int SR_LOCATION, const QPoint& cursorPos)
 {
     int x = cursorPos.x();
     int y = cursorPos.y();
@@ -321,13 +328,13 @@ void SelectRect::selectedRectChangeEvent(int SR_LOCATION, const QPoint& cursorPo
     }
 }
 
-void SelectRect::selectExit()
+void ImageMarquees::selectExit()
 {
     emit sendSelectModeExit();
     this->close();
 }
 
-void SelectRect::selectReset()
+void ImageMarquees::selectReset()
 {
     selectedRect[SR_CENTER] = QRect(0, 0, 0, 0);
     lastSelectedRect = QRect(0, 0, 0, 0);
@@ -342,25 +349,25 @@ void SelectRect::selectReset()
     update();
 }
 
-void SelectRect::cropZoomedImage()
+void ImageMarquees::cropZoomedImage()
 {
-    fixedRectInImage = getRectInImage(zoomedImage, drawImageTopLeftPos, selectedRect[SR_CENTER]);
-    saveImage(zoomedImage, fixedRectInImage);
+    fixedRectInImage = getRectInImage(paintImg, paintImageTopLeft, selectedRect[SR_CENTER]);
+    saveImage(paintImg, fixedRectInImage);
 }
 
-void SelectRect::cropOriginalImage()
+void ImageMarquees::cropOriginalImage()
 {
-    fixedRectInImage = getRectInImage(zoomedImage, drawImageTopLeftPos, selectedRect[SR_CENTER]);
+    fixedRectInImage = getRectInImage(paintImg, paintImageTopLeft, selectedRect[SR_CENTER]);
     int x2 = fixedRectInImage.bottomRight().x();
     int y2 = fixedRectInImage.bottomRight().y();
-    fixedRectInImage.setX(int(round(double(fixedRectInImage.x()) / double(zoomedImage->width()) * double(image->width()))));
-    fixedRectInImage.setY(int(round(double(fixedRectInImage.y()) / double(zoomedImage->height()) * double(image->height()))));
-    fixedRectInImage.setWidth(int(round(double(x2) / double(zoomedImage->width()) * double(image->width()))) - fixedRectInImage.x());
-    fixedRectInImage.setHeight(int(round(double(y2) / double(zoomedImage->height()) * double(image->height()))) - fixedRectInImage.y());
-    saveImage(image, fixedRectInImage);
+    fixedRectInImage.setX(int(round(double(fixedRectInImage.x()) / double(paintImg->width()) * double(inputImg->width()))));
+    fixedRectInImage.setY(int(round(double(fixedRectInImage.y()) / double(paintImg->height()) * double(inputImg->height()))));
+    fixedRectInImage.setWidth(int(round(double(x2) / double(paintImg->width()) * double(inputImg->width()))) - fixedRectInImage.x());
+    fixedRectInImage.setHeight(int(round(double(y2) / double(paintImg->height()) * double(inputImg->height()))) - fixedRectInImage.y());
+    saveImage(inputImg, fixedRectInImage);
 }
 
-void SelectRect::saveImage(const QImage* img, QRect rect)
+void ImageMarquees::saveImage(const QImage* img, QRect rect)
 {
     // 接受到截取框信息
     if (isLoadImage) {
@@ -380,7 +387,7 @@ void SelectRect::saveImage(const QImage* img, QRect rect)
     }
 }
 
-void SelectRect::fixRectInfo(QRect& rect)
+void ImageMarquees::fixRectInfo(QRect& rect)
 {
     QPoint topLeft = rect.topLeft();
     int width = rect.width();
@@ -467,9 +474,6 @@ void ImageWidget::initShowImage()
 {
     paintImg = inputImg.copy();
     setImageAttributeWithAutoFitFlag(enableAutoFitWidget);
-    if (enableLoadImageWithDefaultConfig) {
-        setDefaultParameters();
-    }
     updateImageWidget();
 }
 
@@ -508,13 +512,6 @@ ImageWidget* ImageWidget::setEnableAutoFit(bool flag)
     enableAutoFitWidget = flag;
     mActionImageAutoFitWidget->setChecked(enableAutoFitWidget);
     resetImageWidget();
-    return this;
-}
-
-ImageWidget* ImageWidget::setEnableLoadImageWithDefaultConfig(bool flag)
-{
-    enableLoadImageWithDefaultConfig = flag;
-    mActionLoadImageWithDefaultConfig->setChecked(enableLoadImageWithDefaultConfig);
     return this;
 }
 
@@ -759,7 +756,7 @@ void ImageWidget::createSelectRectInWidget()
 {
     if (!inputImg.isNull()) {
         isSelectMode = true;
-        SelectRect* m = new SelectRect(this);
+        ImageMarquees* m = new ImageMarquees(this);
         m->setGeometry(0, 0, this->geometry().width(), this->geometry().height());
         connect(m, SIGNAL(sendSelectModeExit()), this, SLOT(selectModeExit()));
         connect(this, SIGNAL(sendParentWidgetSizeChangedSignal()), m, SLOT(receiveParentSizeChangedSignal()));
@@ -780,18 +777,14 @@ void ImageWidget::initializeContextmenu()
     mActionEnableDrag = mMenuAdditionalFunction->addAction(tr("启用拖拽")); // Enable Drag
     mActionEnableZoom = mMenuAdditionalFunction->addAction(tr("启用缩放")); // Enable Zoom
     mActionImageAutoFitWidget = mMenuAdditionalFunction->addAction(tr("启动自适应大小")); // Enable Image Fit Widget
-    mActionLoadImageWithDefaultConfig
-        = mMenuAdditionalFunction->addAction(tr("使用默认参数加载图片")); // Use Default Config to Load Image (such as Scale, Image Position)
 
     mActionEnableDrag->setCheckable(true);
     mActionEnableZoom->setCheckable(true);
     mActionImageAutoFitWidget->setCheckable(true);
-    mActionLoadImageWithDefaultConfig->setCheckable(true);
 
     mActionEnableDrag->setChecked(enableDragImage);
     mActionEnableZoom->setChecked(enableZoomImage);
     mActionImageAutoFitWidget->setChecked(enableAutoFitWidget);
-    mActionLoadImageWithDefaultConfig->setChecked(enableLoadImageWithDefaultConfig);
 
     connect(mActionResetParameters, SIGNAL(triggered()), this, SLOT(resetImageWidget()));
     connect(mActionSave, SIGNAL(triggered()), this, SLOT(save()));
@@ -799,7 +792,6 @@ void ImageWidget::initializeContextmenu()
     connect(mActionEnableDrag, SIGNAL(toggled(bool)), this, SLOT(setEnableDrag(bool)));
     connect(mActionEnableZoom, SIGNAL(toggled(bool)), this, SLOT(setEnableZoom(bool)));
     connect(mActionImageAutoFitWidget, SIGNAL(toggled(bool)), this, SLOT(setEnableAutoFit(bool)));
-    connect(mActionLoadImageWithDefaultConfig, SIGNAL(toggled(bool)), this, SLOT(setEnableLoadImageWithDefaultConfig(bool)));
 }
 
 void ImageWidget::sendLeftClickedSignals(QMouseEvent* e)
@@ -901,25 +893,7 @@ void ImageWidget::updateZoomedImage()
     isZoomedParametersChanged = false;
 }
 
-void ImageWidget::setDefaultParameters()
-{
-    zoomScale = 1.0;
-    if (!inputImg.isNull()) {
-        // 首先恢复zoomedImage大小再调整drawPos
-        updateZoomedImage();
-        paintImageRect.moveTopLeft(getImageTopLeftPosWhenShowInCenter(paintImg, this));
-        paintImageLastTopLeft = paintImageRect.topLeft();
-    }
-}
-
 QPoint ImageWidget::getImageTopLeftPosWhenShowInCenter(const QImage& img, const QWidget* iw)
 {
-    QPoint resPoint(0, 0);
-    if (img.width() < iw->width()) {
-        resPoint.setX((iw->width() - img.width()) / 2);
-    }
-    if (img.height() < iw->height()) {
-        resPoint.setY((iw->height() - img.height()) / 2);
-    }
-    return resPoint;
+    return QPoint((iw->width() - img.width()) / 2, (iw->height() - img.height()) / 2);
 }
