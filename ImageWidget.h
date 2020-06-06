@@ -20,10 +20,10 @@
 class ImageMarquees : public QWidget {
     Q_OBJECT
 public:
-    ImageMarquees(QWidget* parent = nullptr);
+    ImageMarquees(QWidget* parent = nullptr, int marqueesEdgeWidth = 5);
     ~ImageMarquees();
-
     void setImage(QImage* inputImg, QImage* paintImg, const QPoint& paintImageTopLeft);
+    void setMarqueesEdgeWidth(int width);
 
 protected:
 signals:
@@ -34,8 +34,8 @@ public slots:
 private slots:
     void receiveParentSizeChangedSignal();
     void selectExit();
-    void selectReset();
-    void cropZoomedImage();
+    void reset();
+    void cropPaintImage();
     void cropOriginalImage();
 
 private:
@@ -50,9 +50,10 @@ private:
     void saveImage(const QImage* img, QRect rect);
     void fixRectInfo(QRect& rect);
     QRect getRectInImage(const QImage* img, const QPoint& imgTopLeftPos, QRect rect);
-    void getEdgeRect();
+    void calcMarqueesEdgeRect();
     int getSelectedAreaSubscript(QPoint cursorPos);
-    void selectedRectChangeEvent(int SR_LOCATION, const QPoint& cursorPos);
+    void cropRectChangeEvent(int SR_LOCATION, const QPoint& cursorPos);
+    bool keyEscapePressEvent();
 
     QMenu* mMenu = nullptr;
     QAction* mActionReset = nullptr;
@@ -74,6 +75,7 @@ private:
     bool isSelectedRectStable = false;
     bool isSelectedRectExisted = false;
     int cursorPosInSelectedArea = SR_NULL;
+    int marqueesEdgeWidth = 5;
 };
 
 #endif
@@ -118,8 +120,8 @@ public slots:
 private slots:
     void resetImageWidget();
     void save();
-    void createSelectRectInWidget();
-    void selectModeExit();
+    void enterCropImageMode();
+    void exitCropImageMode();
     // R1
     void updateImageWidget();
 
@@ -157,7 +159,7 @@ private:
     QPoint paintImageLastTopLeft = NULL_POINT;
 
     // status flags
-    bool isSelectMode = false;
+    bool isCropImageMode = false;
     bool isImagePosChanged = false;
     bool isImageDragging = false;
     bool isZoomedParametersChanged = false;
@@ -176,7 +178,7 @@ private:
     QMenu* mMenu = nullptr;
     QAction* mActionResetParameters = nullptr;
     QAction* mActionSave = nullptr;
-    QAction* mActionSelect = nullptr;
+    QAction* mActionCrop = nullptr;
     // 2
     QMenu* mMenuAdditionalFunction = nullptr;
     QAction* mActionEnableDrag = nullptr;

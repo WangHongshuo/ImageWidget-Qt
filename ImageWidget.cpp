@@ -13,6 +13,7 @@
 #include <QMessageBox>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPainterPath>
 #include <math.h>
 #include <string>
 
@@ -22,10 +23,11 @@ const QPoint ImageWidget::NULL_POINT = QPoint(0, 0);
 const QSize ImageWidget::NULL_SIZE = QSize(0, 0);
 const QRect ImageWidget::NULL_RECT = QRect(0, 0, 0, 0);
 
-ImageMarquees::ImageMarquees(QWidget* parent)
+ImageMarquees::ImageMarquees(QWidget *parent, int marqueesEdgeWidtht)
     : QWidget(parent)
 {
     mouseStatus = Qt::NoButton;
+    this->marqueesEdgeWidth = marqueesEdgeWidtht;
 
     // 初始化右键菜单
     mMenu = new QMenu(this);
@@ -35,9 +37,9 @@ ImageMarquees::ImageMarquees(QWidget* parent)
     mActionExit = mMenu->addAction(tr("退出")); // Exit
 
     connect(mActionExit, SIGNAL(triggered()), this, SLOT(selectExit()));
-    connect(mActionSaveZoomedImage, SIGNAL(triggered()), this, SLOT(cropZoomedImage()));
+    connect(mActionSaveZoomedImage, SIGNAL(triggered()), this, SLOT(cropPaintImage()));
     connect(mActionSaveOriginalImage, SIGNAL(triggered()), this, SLOT(cropOriginalImage()));
-    connect(mActionReset, SIGNAL(triggered()), this, SLOT(selectReset()));
+    connect(mActionReset, SIGNAL(triggered()), this, SLOT(reset()));
     // 关闭后释放资源
     this->setAttribute(Qt::WA_DeleteOnClose);
     this->setFocusPolicy(Qt::StrongFocus);
@@ -58,34 +60,35 @@ void ImageMarquees::setImage(QImage* inputImg, QImage* paintImg, const QPoint& p
     isLoadImage = true;
 }
 
+void ImageMarquees::setMarqueesEdgeWidth(int width) { this->marqueesEdgeWidth = width; }
+
 void ImageMarquees::receiveParentSizeChangedSignal()
 {
     ImageWidget* parentWidget = static_cast<ImageWidget*>(this->parent());
     this->setGeometry(0, 0, parentWidget->width(), parentWidget->height());
-    //    qDebug() << this->geometry();
     paintImageTopLeft = parentWidget->getDrawImageTopLeftPos();
     update();
 }
 
 void ImageMarquees::paintEvent(QPaintEvent* event)
 {
-    // 背景
-    QPainterPath mask;
-    // 选中的范围
-    QPainterPath selectArea;
-    // 椭圆
-    selectArea.addRect(selectedRect[SR_CENTER].x(), selectedRect[SR_CENTER].y(), selectedRect[SR_CENTER].width(), selectedRect[SR_CENTER].height());
-    mask.addRect(this->geometry());
-    QPainterPath drawMask = mask.subtracted(selectArea);
+    QPainterPath transparentArea, cropArea;
+    transparentArea.addRect(this->geometry());
+    cropArea.addRect(selectedRect[SR_CENTER]);
+    transparentArea = transparentArea.subtracted(cropArea);
     QPainter painter(this);
-    painter.setPen(QPen(QColor(255, 0, 0, 255), 1));
-    painter.fillPath(drawMask, QBrush(QColor(0, 0, 0, 160)));
-    painter.drawRect(selectedRect[SR_CENTER]);
+    painter.fillPath(transparentArea, QBrush(QColor(0, 0, 0, 160)));
     if (isSelectedRectStable) {
         painter.setPen(QPen(QColor(0, 140, 255, 255), 1));
         painter.drawRect(selectedRect[SR_CENTER]);
+        cropArea.clear();
         for (int i = 1; i < 5; i++)
-            painter.fillRect(selectedRect[i], QBrush(QColor(0, 140, 255, 255)));
+            cropArea.addRect(selectedRect[i]);
+        painter.fillPath(cropArea, QBrush(QColor(0, 140, 255, 255)));
+
+    } else {
+            painter.setPen(QPen(QColor(255, 0, 0, 255), 1));
+            painter.drawRect(selectedRect[SR_CENTER]);
     }
 }
 
@@ -114,7 +117,7 @@ void ImageMarquees::mouseMoveEvent(QMouseEvent* event)
     if (mouseStatus == Qt::LeftButton) {
         isSelectedRectStable = false;
         isSelectedRectExisted = true;
-        selectedRectChangeEvent(cursorPosInSelectedArea, event->pos());
+        cropRectChangeEvent(cursorPosInSelectedArea, event->pos());
         update();
     }
     // 判断鼠标是否在矩形框内
@@ -136,7 +139,7 @@ void ImageMarquees::mouseReleaseEvent(QMouseEvent* event)
         // 备份
         lastSelectedRect = selectedRect[SR_CENTER];
         mouseStatus = Qt::NoButton;
-        getEdgeRect();
+        calcMarqueesEdgeRect();
         isSelectedRectStable = true;
         isSelectedRectExisted = true;
         update();
@@ -158,13 +161,12 @@ bool ImageMarquees::eventFilter(QObject* watched, QEvent* event)
 {
     if (event->type() == QEvent::KeyPress) {
         QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
-        if (keyEvent->key() == Qt::Key_Escape) {
-            // 如果存在选中框则删除选中框 不存在则退出
-            if (isSelectedRectExisted) {
-                selectReset();
-                return true;
-            } else
-                this->selectExit();
+        switch (keyEvent->key()) {
+            // 支持ESC键退出
+        case Qt::Key_Escape:
+            return keyEscapePressEvent();
+        default:
+            break;
         }
     }
     // 截断wheelEvent
@@ -201,22 +203,19 @@ QRect ImageMarquees::getRectInImage(const QImage* img, const QPoint& imgTopLeftP
     return returnRect;
 }
 
-void ImageMarquees::getEdgeRect()
+void ImageMarquees::calcMarqueesEdgeRect()
 {
-    // 边框宽
-    int w = 5;
-
-    selectedRect[SR_TOPLEFT].setTopLeft(selectedRect[SR_CENTER].topLeft() + QPoint(-w, -w));
+    selectedRect[SR_TOPLEFT].setTopLeft(selectedRect[SR_CENTER].topLeft() + QPoint(-marqueesEdgeWidth, -marqueesEdgeWidth));
     selectedRect[SR_TOPLEFT].setBottomRight(selectedRect[SR_CENTER].topLeft() + QPoint(-1, -1));
 
-    selectedRect[SR_TOPRIGHT].setTopRight(selectedRect[SR_CENTER].topRight() + QPoint(w, -w));
+    selectedRect[SR_TOPRIGHT].setTopRight(selectedRect[SR_CENTER].topRight() + QPoint(marqueesEdgeWidth, -marqueesEdgeWidth));
     selectedRect[SR_TOPRIGHT].setBottomLeft(selectedRect[SR_CENTER].topRight() + QPoint(1, -1));
 
     selectedRect[SR_BOTTOMRIGHT].setTopLeft(selectedRect[SR_CENTER].bottomRight() + QPoint(1, 1));
-    selectedRect[SR_BOTTOMRIGHT].setBottomRight(selectedRect[SR_CENTER].bottomRight() + QPoint(w, w));
+    selectedRect[SR_BOTTOMRIGHT].setBottomRight(selectedRect[SR_CENTER].bottomRight() + QPoint(marqueesEdgeWidth, marqueesEdgeWidth));
 
     selectedRect[SR_BOTTOMLEFT].setTopRight(selectedRect[SR_CENTER].bottomLeft() + QPoint(-1, 1));
-    selectedRect[SR_BOTTOMLEFT].setBottomLeft(selectedRect[SR_CENTER].bottomLeft() + QPoint(-w, w));
+    selectedRect[SR_BOTTOMLEFT].setBottomLeft(selectedRect[SR_CENTER].bottomLeft() + QPoint(-marqueesEdgeWidth, marqueesEdgeWidth));
 
     selectedRect[SR_TOP].setTopLeft(selectedRect[SR_TOPLEFT].topRight() + QPoint(1, 0));
     selectedRect[SR_TOP].setBottomRight(selectedRect[SR_TOPRIGHT].bottomLeft() + QPoint(-1, 0));
@@ -276,7 +275,7 @@ int ImageMarquees::getSelectedAreaSubscript(QPoint cursorPos)
     return SR_NULL;
 }
 
-void ImageMarquees::selectedRectChangeEvent(int SR_LOCATION, const QPoint& cursorPos)
+void ImageMarquees::cropRectChangeEvent(int SR_LOCATION, const QPoint& cursorPos)
 {
     int x = cursorPos.x();
     int y = cursorPos.y();
@@ -328,13 +327,23 @@ void ImageMarquees::selectedRectChangeEvent(int SR_LOCATION, const QPoint& curso
     }
 }
 
+bool ImageMarquees::keyEscapePressEvent()
+{
+    if (isSelectedRectExisted) {
+        reset();
+    } else {
+        this->selectExit();
+    }
+    return true;
+}
+
 void ImageMarquees::selectExit()
 {
     emit sendSelectModeExit();
     this->close();
 }
 
-void ImageMarquees::selectReset()
+void ImageMarquees::reset()
 {
     selectedRect[SR_CENTER] = QRect(0, 0, 0, 0);
     lastSelectedRect = QRect(0, 0, 0, 0);
@@ -349,7 +358,7 @@ void ImageMarquees::selectReset()
     update();
 }
 
-void ImageMarquees::cropZoomedImage()
+void ImageMarquees::cropPaintImage()
 {
     fixedRectInImage = getRectInImage(paintImg, paintImageTopLeft, selectedRect[SR_CENTER]);
     saveImage(paintImg, fixedRectInImage);
@@ -407,7 +416,7 @@ void ImageMarquees::fixRectInfo(QRect& rect)
 ImageWidget::ImageWidget(QWidget* parent)
     : QWidget(parent)
 {
-    isSelectMode = false;
+    isCropImageMode = false;
     imageWidgetPaintRect = QRect(-PAINT_AREA_OFFEST, -PAINT_AREA_OFFEST, this->width() + 2 * PAINT_AREA_OFFEST, this->height() + 2 * PAINT_AREA_OFFEST);
     initializeContextmenu();
 }
@@ -720,7 +729,7 @@ void ImageWidget::resizeEvent(QResizeEvent* e)
         } else {
             // TODO: 拖动后的图像在ImageWidget尺寸发生变化后如何调整
         }
-        if (isSelectMode)
+        if (isCropImageMode)
             emit sendParentWidgetSizeChangedSignal();
         fixPaintImageTopLeft();
         paintImageLastTopLeft = paintImageRect.topLeft();
@@ -752,13 +761,13 @@ void ImageWidget::imageZoomIn()
     }
 }
 
-void ImageWidget::createSelectRectInWidget()
+void ImageWidget::enterCropImageMode()
 {
     if (!inputImg.isNull()) {
-        isSelectMode = true;
+        isCropImageMode = true;
         ImageMarquees* m = new ImageMarquees(this);
         m->setGeometry(0, 0, this->geometry().width(), this->geometry().height());
-        connect(m, SIGNAL(sendSelectModeExit()), this, SLOT(selectModeExit()));
+        connect(m, SIGNAL(sendSelectModeExit()), this, SLOT(exitCropImageMode()));
         connect(this, SIGNAL(sendParentWidgetSizeChangedSignal()), m, SLOT(receiveParentSizeChangedSignal()));
         m->setImage(&inputImg, &paintImg, paintImageRect.topLeft());
         m->show();
@@ -772,7 +781,7 @@ void ImageWidget::initializeContextmenu()
 
     mActionResetParameters = mMenu->addAction(tr("重置")); // Reset
     mActionSave = mMenu->addAction(tr("另存为")); // Save As
-    mActionSelect = mMenu->addAction(tr("截取")); // Crop
+    mActionCrop = mMenu->addAction(tr("截取")); // Crop
     mMenuAdditionalFunction = mMenu->addMenu(tr("更多功能")); // More Function
     mActionEnableDrag = mMenuAdditionalFunction->addAction(tr("启用拖拽")); // Enable Drag
     mActionEnableZoom = mMenuAdditionalFunction->addAction(tr("启用缩放")); // Enable Zoom
@@ -788,7 +797,7 @@ void ImageWidget::initializeContextmenu()
 
     connect(mActionResetParameters, SIGNAL(triggered()), this, SLOT(resetImageWidget()));
     connect(mActionSave, SIGNAL(triggered()), this, SLOT(save()));
-    connect(mActionSelect, SIGNAL(triggered()), this, SLOT(createSelectRectInWidget()));
+    connect(mActionCrop, SIGNAL(triggered()), this, SLOT(enterCropImageMode()));
     connect(mActionEnableDrag, SIGNAL(toggled(bool)), this, SLOT(setEnableDrag(bool)));
     connect(mActionEnableZoom, SIGNAL(toggled(bool)), this, SLOT(setEnableZoom(bool)));
     connect(mActionImageAutoFitWidget, SIGNAL(toggled(bool)), this, SLOT(setEnableAutoFit(bool)));
@@ -839,7 +848,7 @@ void ImageWidget::save()
     }
 }
 
-void ImageWidget::selectModeExit() { isSelectMode = false; }
+void ImageWidget::exitCropImageMode() { isCropImageMode = false; }
 
 void ImageWidget::updateImageWidget()
 {
