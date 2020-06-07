@@ -22,18 +22,18 @@ class ImageMarquees : public QWidget {
 public:
     ImageMarquees(QWidget* parent = nullptr, int marqueesEdgeWidth = 5);
     ~ImageMarquees();
-    void setImage(QImage* inputImg, QImage* paintImg, const QPoint& paintImageTopLeft);
+    void setImage(QImage* inputImg, QImage* paintImg, const QRect &paintImageRect);
     void setMarqueesEdgeWidth(int width);
 
 protected:
 signals:
-    void sendSelectModeExit();
+    void sendExitSignal();
 
 public slots:
 
 private slots:
-    void receiveParentSizeChangedSignal();
-    void selectExit();
+    void recvParentWidgetSizeChangeSignal();
+    void exit();
     void reset();
     void cropPaintImage();
     void cropOriginalImage();
@@ -47,34 +47,35 @@ private:
     void wheelEvent(QWheelEvent* event);
     bool eventFilter(QObject* watched, QEvent* event);
     void keyPressEvent(QKeyEvent* event);
-    void saveImage(const QImage* img, QRect rect);
+    void saveImage(const QImage* img, const QRect &rect);
     void fixRectInfo(QRect& rect);
-    QRect getRectInImage(const QImage* img, const QPoint& imgTopLeftPos, QRect rect);
+    QRect getCropRectInImage(const QRect &paintImageRect, const QRect &rect);
     void calcMarqueesEdgeRect();
-    int getSelectedAreaSubscript(QPoint cursorPos);
+    int getSubRectInCropRect(QPoint cursorPos);
     void cropRectChangeEvent(int SR_LOCATION, const QPoint& cursorPos);
     bool keyEscapePressEvent();
 
     QMenu* mMenu = nullptr;
     QAction* mActionReset = nullptr;
-    QAction* mActionSaveZoomedImage = nullptr;
+    QAction* mActionSavePaintImage = nullptr;
     QAction* mActionSaveOriginalImage = nullptr;
     QAction* mActionExit = nullptr;
-    enum { SR_NULL = -1, SR_CENTER, SR_TOPLEFT, SR_TOPRIGHT, SR_BOTTOMRIGHT, SR_BOTTOMLEFT, SR_TOP, SR_RIGHT, SR_BOTTOM, SR_LEFT, SR_ENTIRETY, SR_TEST };
+    // CropRect
+    enum { CR_NULL = -1, CR_CENTER, CR_TOPLEFT, CR_TOPRIGHT, CR_BOTTOMRIGHT, CR_BOTTOMLEFT, CR_TOP, CR_RIGHT, CR_BOTTOM, CR_LEFT, CR_ENTIRETY};
     // Widget中选中的范围
-    QRect selectedRect[10];
-    QRect lastSelectedRect;
+    QRect cropRect[10];
+    QRect prevCropRect;
     // Image中选中的范围
-    QRect fixedRectInImage;
-    QPoint paintImageTopLeft = QPoint(-1, -1);
+    QRect cropRectInImage;
+    QRect paintImageRect;
     QPoint mouseLeftClickedPos = QPoint(0, 0);
     int mouseStatus;
     QImage* inputImg = nullptr;
     QImage* paintImg = nullptr;
     bool isLoadImage = false;
-    bool isSelectedRectStable = false;
-    bool isSelectedRectExisted = false;
-    int cursorPosInSelectedArea = SR_NULL;
+    bool isCropRectStable = false;
+    bool isCropRectExisted = false;
+    int cursorPosInCropRect = CR_NULL;
     int marqueesEdgeWidth = 5;
 };
 

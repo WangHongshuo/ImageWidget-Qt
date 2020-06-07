@@ -32,12 +32,12 @@ ImageMarquees::ImageMarquees(QWidget *parent, int marqueesEdgeWidtht)
     // 初始化右键菜单
     mMenu = new QMenu(this);
     mActionReset = mMenu->addAction(tr("重选")); // Reset
-    mActionSaveZoomedImage = mMenu->addAction(tr("另存为(缩放图像)")); // Save as (From the zoomed image)
+    mActionSavePaintImage = mMenu->addAction(tr("另存为(缩放图像)")); // Save as (From the zoomed image)
     mActionSaveOriginalImage = mMenu->addAction(tr("另存为(实际图像)")); // Save as (From the original image)
     mActionExit = mMenu->addAction(tr("退出")); // Exit
 
-    connect(mActionExit, SIGNAL(triggered()), this, SLOT(selectExit()));
-    connect(mActionSaveZoomedImage, SIGNAL(triggered()), this, SLOT(cropPaintImage()));
+    connect(mActionExit, SIGNAL(triggered()), this, SLOT(exit()));
+    connect(mActionSavePaintImage, SIGNAL(triggered()), this, SLOT(cropPaintImage()));
     connect(mActionSaveOriginalImage, SIGNAL(triggered()), this, SLOT(cropOriginalImage()));
     connect(mActionReset, SIGNAL(triggered()), this, SLOT(reset()));
     // 关闭后释放资源
@@ -52,21 +52,21 @@ ImageMarquees::~ImageMarquees()
     mMenu = nullptr;
 }
 
-void ImageMarquees::setImage(QImage* inputImg, QImage* paintImg, const QPoint& paintImageTopLeft)
+void ImageMarquees::setImage(QImage* inputImg, QImage* paintImg, const QRect &paintImageRect)
 {
     this->inputImg = inputImg;
     this->paintImg = paintImg;
-    this->paintImageTopLeft = paintImageTopLeft;
+    this->paintImageRect = paintImageRect;
     isLoadImage = true;
 }
 
 void ImageMarquees::setMarqueesEdgeWidth(int width) { this->marqueesEdgeWidth = width; }
 
-void ImageMarquees::receiveParentSizeChangedSignal()
+void ImageMarquees::recvParentWidgetSizeChangeSignal()
 {
     ImageWidget* parentWidget = static_cast<ImageWidget*>(this->parent());
     this->setGeometry(0, 0, parentWidget->width(), parentWidget->height());
-    paintImageTopLeft = parentWidget->getDrawImageTopLeftPos();
+    paintImageRect.moveTo(parentWidget->getDrawImageTopLeftPos());
     update();
 }
 
@@ -74,21 +74,20 @@ void ImageMarquees::paintEvent(QPaintEvent* event)
 {
     QPainterPath transparentArea, cropArea;
     transparentArea.addRect(this->geometry());
-    cropArea.addRect(selectedRect[SR_CENTER]);
+    cropArea.addRect(cropRect[CR_CENTER]);
     transparentArea = transparentArea.subtracted(cropArea);
     QPainter painter(this);
     painter.fillPath(transparentArea, QBrush(QColor(0, 0, 0, 160)));
-    if (isSelectedRectStable) {
+    if (isCropRectStable) {
         painter.setPen(QPen(QColor(0, 140, 255, 255), 1));
-        painter.drawRect(selectedRect[SR_CENTER]);
+        painter.drawRect(cropRect[CR_CENTER]);
         cropArea.clear();
         for (int i = 1; i < 5; i++)
-            cropArea.addRect(selectedRect[i]);
+            cropArea.addRect(cropRect[i]);
         painter.fillPath(cropArea, QBrush(QColor(0, 140, 255, 255)));
-
     } else {
             painter.setPen(QPen(QColor(255, 0, 0, 255), 1));
-            painter.drawRect(selectedRect[SR_CENTER]);
+            painter.drawRect(cropRect[CR_CENTER]);
     }
 }
 
@@ -115,17 +114,17 @@ void ImageMarquees::mousePressEvent(QMouseEvent* event)
 void ImageMarquees::mouseMoveEvent(QMouseEvent* event)
 {
     if (mouseStatus == Qt::LeftButton) {
-        isSelectedRectStable = false;
-        isSelectedRectExisted = true;
-        cropRectChangeEvent(cursorPosInSelectedArea, event->pos());
+        isCropRectStable = false;
+        isCropRectExisted = true;
+        cropRectChangeEvent(cursorPosInCropRect, event->pos());
         update();
     }
     // 判断鼠标是否在矩形框内
-    if (mouseStatus == Qt::NoButton && isSelectedRectStable) {
-        if (selectedRect[SR_ENTIRETY].contains(event->pos())) {
-            cursorPosInSelectedArea = getSelectedAreaSubscript(event->pos());
+    if (mouseStatus == Qt::NoButton && isCropRectStable) {
+        if (cropRect[CR_ENTIRETY].contains(event->pos())) {
+            cursorPosInCropRect = getSubRectInCropRect(event->pos());
         } else {
-            cursorPosInSelectedArea = SR_NULL;
+            cursorPosInCropRect = CR_NULL;
             this->setCursor(Qt::ArrowCursor);
         }
     }
@@ -135,13 +134,13 @@ void ImageMarquees::mouseReleaseEvent(QMouseEvent* event)
 {
     if (mouseStatus == Qt::LeftButton) {
         // 修正RectInfo::w和RectInfo::h为正
-        fixRectInfo(selectedRect[SR_CENTER]);
+        fixRectInfo(cropRect[CR_CENTER]);
         // 备份
-        lastSelectedRect = selectedRect[SR_CENTER];
+        prevCropRect = cropRect[CR_CENTER];
         mouseStatus = Qt::NoButton;
         calcMarqueesEdgeRect();
-        isSelectedRectStable = true;
-        isSelectedRectExisted = true;
+        isCropRectStable = true;
+        isCropRectExisted = true;
         update();
         // 开启鼠标追踪
         this->setMouseTracking(true);
@@ -180,99 +179,84 @@ bool ImageMarquees::eventFilter(QObject* watched, QEvent* event)
 
 void ImageMarquees::keyPressEvent(QKeyEvent* event) { eventFilter(this, event); }
 
-QRect ImageMarquees::getRectInImage(const QImage* img, const QPoint& imgTopLeftPos, QRect rect)
+QRect ImageMarquees::getCropRectInImage(const QRect& paintImageRect, const QRect& cropRect)
 {
-    QRect returnRect;
-    // 计算相对于图像内的坐标
-    returnRect.moveTo(rect.topLeft() - imgTopLeftPos);
-    // 限定截取范围在图像内 修正顶点
-    if (returnRect.x() < 0) {
-        // QRect::setX change the width
-        returnRect.setX(0);
-    }
-    if (returnRect.y() < 0) {
-        // QRect::setY change the height
-        returnRect.setY(0);
-    }
-    if (returnRect.bottomRight().x() >= img->width())
-        // QRect::setRight change the width
-        returnRect.setRight(img->width() - 1);
-    if (returnRect.bottomRight().y() >= img->height())
-        // Qrect::setBottom change the height
-        returnRect.setBottom(img->height() - 1);
-    return returnRect;
+    QRect result = paintImageRect.intersected(cropRect);
+    result.translate(-paintImageRect.topLeft());
+    return result;
 }
 
 void ImageMarquees::calcMarqueesEdgeRect()
 {
-    selectedRect[SR_TOPLEFT].setTopLeft(selectedRect[SR_CENTER].topLeft() + QPoint(-marqueesEdgeWidth, -marqueesEdgeWidth));
-    selectedRect[SR_TOPLEFT].setBottomRight(selectedRect[SR_CENTER].topLeft() + QPoint(-1, -1));
+    cropRect[CR_TOPLEFT].setTopLeft(cropRect[CR_CENTER].topLeft() + QPoint(-marqueesEdgeWidth, -marqueesEdgeWidth));
+    cropRect[CR_TOPLEFT].setBottomRight(cropRect[CR_CENTER].topLeft() + QPoint(-1, -1));
 
-    selectedRect[SR_TOPRIGHT].setTopRight(selectedRect[SR_CENTER].topRight() + QPoint(marqueesEdgeWidth, -marqueesEdgeWidth));
-    selectedRect[SR_TOPRIGHT].setBottomLeft(selectedRect[SR_CENTER].topRight() + QPoint(1, -1));
+    cropRect[CR_TOPRIGHT].setTopRight(cropRect[CR_CENTER].topRight() + QPoint(marqueesEdgeWidth, -marqueesEdgeWidth));
+    cropRect[CR_TOPRIGHT].setBottomLeft(cropRect[CR_CENTER].topRight() + QPoint(1, -1));
 
-    selectedRect[SR_BOTTOMRIGHT].setTopLeft(selectedRect[SR_CENTER].bottomRight() + QPoint(1, 1));
-    selectedRect[SR_BOTTOMRIGHT].setBottomRight(selectedRect[SR_CENTER].bottomRight() + QPoint(marqueesEdgeWidth, marqueesEdgeWidth));
+    cropRect[CR_BOTTOMRIGHT].setTopLeft(cropRect[CR_CENTER].bottomRight() + QPoint(1, 1));
+    cropRect[CR_BOTTOMRIGHT].setBottomRight(cropRect[CR_CENTER].bottomRight() + QPoint(marqueesEdgeWidth, marqueesEdgeWidth));
 
-    selectedRect[SR_BOTTOMLEFT].setTopRight(selectedRect[SR_CENTER].bottomLeft() + QPoint(-1, 1));
-    selectedRect[SR_BOTTOMLEFT].setBottomLeft(selectedRect[SR_CENTER].bottomLeft() + QPoint(-marqueesEdgeWidth, marqueesEdgeWidth));
+    cropRect[CR_BOTTOMLEFT].setTopRight(cropRect[CR_CENTER].bottomLeft() + QPoint(-1, 1));
+    cropRect[CR_BOTTOMLEFT].setBottomLeft(cropRect[CR_CENTER].bottomLeft() + QPoint(-marqueesEdgeWidth, marqueesEdgeWidth));
 
-    selectedRect[SR_TOP].setTopLeft(selectedRect[SR_TOPLEFT].topRight() + QPoint(1, 0));
-    selectedRect[SR_TOP].setBottomRight(selectedRect[SR_TOPRIGHT].bottomLeft() + QPoint(-1, 0));
+    cropRect[CR_TOP].setTopLeft(cropRect[CR_TOPLEFT].topRight() + QPoint(1, 0));
+    cropRect[CR_TOP].setBottomRight(cropRect[CR_TOPRIGHT].bottomLeft() + QPoint(-1, 0));
 
-    selectedRect[SR_RIGHT].setTopLeft(selectedRect[SR_TOPRIGHT].bottomLeft() + QPoint(0, 1));
-    selectedRect[SR_RIGHT].setBottomRight(selectedRect[SR_BOTTOMRIGHT].topRight() + QPoint(0, -1));
 
-    selectedRect[SR_BOTTOM].setTopLeft(selectedRect[SR_BOTTOMLEFT].topRight() + QPoint(1, 0));
-    selectedRect[SR_BOTTOM].setBottomRight(selectedRect[SR_BOTTOMRIGHT].bottomLeft() + QPoint(-1, 0));
+    cropRect[CR_RIGHT].setTopLeft(cropRect[CR_TOPRIGHT].bottomLeft() + QPoint(0, 1));
+    cropRect[CR_RIGHT].setBottomRight(cropRect[CR_BOTTOMRIGHT].topRight() + QPoint(0, -1));
 
-    selectedRect[SR_LEFT].setTopLeft(selectedRect[SR_TOPLEFT].bottomLeft() + QPoint(0, 1));
-    selectedRect[SR_LEFT].setBottomRight(selectedRect[SR_BOTTOMLEFT].topRight() + QPoint(0, -1));
+    cropRect[CR_BOTTOM].setTopLeft(cropRect[CR_BOTTOMLEFT].topRight() + QPoint(1, 0));
+    cropRect[CR_BOTTOM].setBottomRight(cropRect[CR_BOTTOMRIGHT].bottomLeft() + QPoint(-1, 0));
 
-    selectedRect[SR_ENTIRETY].setTopLeft(selectedRect[SR_TOPLEFT].topLeft());
-    selectedRect[SR_ENTIRETY].setBottomRight(selectedRect[SR_BOTTOMRIGHT].bottomRight());
+    cropRect[CR_LEFT].setTopLeft(cropRect[CR_TOPLEFT].bottomLeft() + QPoint(0, 1));
+    cropRect[CR_LEFT].setBottomRight(cropRect[CR_BOTTOMLEFT].topRight() + QPoint(0, -1));
+
+    cropRect[CR_ENTIRETY].setTopLeft(cropRect[CR_TOPLEFT].topLeft());
+    cropRect[CR_ENTIRETY].setBottomRight(cropRect[CR_BOTTOMRIGHT].bottomRight());
 }
 
-int ImageMarquees::getSelectedAreaSubscript(QPoint cursorPos)
+int ImageMarquees::getSubRectInCropRect(QPoint cursorPos)
 {
     // 可用树结构减少if
-    if (selectedRect[SR_CENTER].contains(cursorPos)) {
+    if (cropRect[CR_CENTER].contains(cursorPos)) {
         this->setCursor(Qt::SizeAllCursor);
-        return SR_CENTER;
+        return CR_CENTER;
     }
-    if (selectedRect[SR_TOPLEFT].contains(cursorPos)) {
+    if (cropRect[CR_TOPLEFT].contains(cursorPos)) {
         this->setCursor(Qt::SizeFDiagCursor);
-        return SR_TOPLEFT;
+        return CR_TOPLEFT;
     }
-    if (selectedRect[SR_TOP].contains(cursorPos)) {
+    if (cropRect[CR_TOP].contains(cursorPos)) {
         this->setCursor(Qt::SizeVerCursor);
-        return SR_TOP;
+        return CR_TOP;
     }
-    if (selectedRect[SR_TOPRIGHT].contains(cursorPos)) {
+    if (cropRect[CR_TOPRIGHT].contains(cursorPos)) {
         this->setCursor(Qt::SizeBDiagCursor);
-        return SR_TOPRIGHT;
+        return CR_TOPRIGHT;
     }
-    if (selectedRect[SR_RIGHT].contains(cursorPos)) {
+    if (cropRect[CR_RIGHT].contains(cursorPos)) {
         this->setCursor(Qt::SizeHorCursor);
-        return SR_RIGHT;
+        return CR_RIGHT;
     }
-    if (selectedRect[SR_BOTTOMRIGHT].contains(cursorPos)) {
+    if (cropRect[CR_BOTTOMRIGHT].contains(cursorPos)) {
         this->setCursor(Qt::SizeFDiagCursor);
-        return SR_BOTTOMRIGHT;
+        return CR_BOTTOMRIGHT;
     }
-    if (selectedRect[SR_BOTTOM].contains(cursorPos)) {
+    if (cropRect[CR_BOTTOM].contains(cursorPos)) {
         this->setCursor(Qt::SizeVerCursor);
-        return SR_BOTTOM;
+        return CR_BOTTOM;
     }
-    if (selectedRect[SR_BOTTOMLEFT].contains(cursorPos)) {
+    if (cropRect[CR_BOTTOMLEFT].contains(cursorPos)) {
         this->setCursor(Qt::SizeBDiagCursor);
-        return SR_BOTTOMLEFT;
+        return CR_BOTTOMLEFT;
     }
-    if (selectedRect[SR_LEFT].contains(cursorPos)) {
+    if (cropRect[CR_LEFT].contains(cursorPos)) {
         this->setCursor(Qt::SizeHorCursor);
-        return SR_LEFT;
+        return CR_LEFT;
     }
-    return SR_NULL;
+    return CR_NULL;
 }
 
 void ImageMarquees::cropRectChangeEvent(int SR_LOCATION, const QPoint& cursorPos)
@@ -280,9 +264,9 @@ void ImageMarquees::cropRectChangeEvent(int SR_LOCATION, const QPoint& cursorPos
     int x = cursorPos.x();
     int y = cursorPos.y();
     switch (SR_LOCATION) {
-    case SR_NULL:
+    case CR_NULL:
         // 限定在mask内
-        selectedRect[SR_CENTER].setTopLeft(mouseLeftClickedPos);
+        cropRect[CR_CENTER].setTopLeft(mouseLeftClickedPos);
         if (x < 0)
             x = 0;
         else if (x > this->width())
@@ -291,36 +275,36 @@ void ImageMarquees::cropRectChangeEvent(int SR_LOCATION, const QPoint& cursorPos
             y = 0;
         else if (y > this->height())
             y = this->height();
-        selectedRect[SR_CENTER].setWidth(x - selectedRect[SR_CENTER].x());
-        selectedRect[SR_CENTER].setHeight(y - selectedRect[SR_CENTER].y());
-        fixRectInfo(selectedRect[SR_CENTER]);
+        cropRect[CR_CENTER].setWidth(x - cropRect[CR_CENTER].x());
+        cropRect[CR_CENTER].setHeight(y - cropRect[CR_CENTER].y());
+        fixRectInfo(cropRect[CR_CENTER]);
         break;
-    case SR_CENTER:
-        selectedRect[SR_CENTER].moveTo(lastSelectedRect.topLeft() + (cursorPos - mouseLeftClickedPos));
+    case CR_CENTER:
+        cropRect[CR_CENTER].moveTo(prevCropRect.topLeft() + (cursorPos - mouseLeftClickedPos));
         break;
-    case SR_TOPLEFT:
-        selectedRect[SR_CENTER].setTopLeft(lastSelectedRect.topLeft() + (cursorPos - mouseLeftClickedPos));
+    case CR_TOPLEFT:
+        cropRect[CR_CENTER].setTopLeft(prevCropRect.topLeft() + (cursorPos - mouseLeftClickedPos));
         break;
-    case SR_TOP:
-        selectedRect[SR_CENTER].setTop(lastSelectedRect.top() + (cursorPos.y() - mouseLeftClickedPos.y()));
+    case CR_TOP:
+        cropRect[CR_CENTER].setTop(prevCropRect.top() + (cursorPos.y() - mouseLeftClickedPos.y()));
         break;
-    case SR_TOPRIGHT:
-        selectedRect[SR_CENTER].setTopRight(lastSelectedRect.topRight() + (cursorPos - mouseLeftClickedPos));
+    case CR_TOPRIGHT:
+        cropRect[CR_CENTER].setTopRight(prevCropRect.topRight() + (cursorPos - mouseLeftClickedPos));
         break;
-    case SR_RIGHT:
-        selectedRect[SR_CENTER].setRight(lastSelectedRect.right() + (cursorPos.x() - mouseLeftClickedPos.x()));
+    case CR_RIGHT:
+        cropRect[CR_CENTER].setRight(prevCropRect.right() + (cursorPos.x() - mouseLeftClickedPos.x()));
         break;
-    case SR_BOTTOMRIGHT:
-        selectedRect[SR_CENTER].setBottomRight(lastSelectedRect.bottomRight() + (cursorPos - mouseLeftClickedPos));
+    case CR_BOTTOMRIGHT:
+        cropRect[CR_CENTER].setBottomRight(prevCropRect.bottomRight() + (cursorPos - mouseLeftClickedPos));
         break;
-    case SR_BOTTOM:
-        selectedRect[SR_CENTER].setBottom(lastSelectedRect.bottom() + (cursorPos.y() - mouseLeftClickedPos.y()));
+    case CR_BOTTOM:
+        cropRect[CR_CENTER].setBottom(prevCropRect.bottom() + (cursorPos.y() - mouseLeftClickedPos.y()));
         break;
-    case SR_BOTTOMLEFT:
-        selectedRect[SR_CENTER].setBottomLeft(lastSelectedRect.bottomLeft() + (cursorPos - mouseLeftClickedPos));
+    case CR_BOTTOMLEFT:
+        cropRect[CR_CENTER].setBottomLeft(prevCropRect.bottomLeft() + (cursorPos - mouseLeftClickedPos));
         break;
-    case SR_LEFT:
-        selectedRect[SR_CENTER].setLeft(lastSelectedRect.left() + (cursorPos.x() - mouseLeftClickedPos.x()));
+    case CR_LEFT:
+        cropRect[CR_CENTER].setLeft(prevCropRect.left() + (cursorPos.x() - mouseLeftClickedPos.x()));
         break;
     default:
         break;
@@ -329,58 +313,59 @@ void ImageMarquees::cropRectChangeEvent(int SR_LOCATION, const QPoint& cursorPos
 
 bool ImageMarquees::keyEscapePressEvent()
 {
-    if (isSelectedRectExisted) {
+    if (isCropRectExisted) {
         reset();
     } else {
-        this->selectExit();
+        this->exit();
     }
     return true;
 }
 
-void ImageMarquees::selectExit()
+void ImageMarquees::exit()
 {
-    emit sendSelectModeExit();
+    emit sendExitSignal();
     this->close();
 }
 
 void ImageMarquees::reset()
 {
-    selectedRect[SR_CENTER] = QRect(0, 0, 0, 0);
-    lastSelectedRect = QRect(0, 0, 0, 0);
+    cropRect[CR_CENTER] = QRect(0, 0, 0, 0);
+    prevCropRect = QRect(0, 0, 0, 0);
 
-    isSelectedRectStable = false;
-    isSelectedRectExisted = false;
+    isCropRectStable = false;
+    isCropRectExisted = false;
     // 关闭鼠标追踪 节省资源
     this->setMouseTracking(false);
     this->setCursor(Qt::ArrowCursor);
-    cursorPosInSelectedArea = SR_NULL;
+    cursorPosInCropRect = CR_NULL;
     mouseStatus = Qt::NoButton;
     update();
 }
 
 void ImageMarquees::cropPaintImage()
 {
-    fixedRectInImage = getRectInImage(paintImg, paintImageTopLeft, selectedRect[SR_CENTER]);
-    saveImage(paintImg, fixedRectInImage);
+    cropRectInImage = getCropRectInImage(paintImageRect, cropRect[CR_CENTER]);
+    saveImage(paintImg, cropRectInImage);
 }
 
 void ImageMarquees::cropOriginalImage()
 {
-    fixedRectInImage = getRectInImage(paintImg, paintImageTopLeft, selectedRect[SR_CENTER]);
-    int x2 = fixedRectInImage.bottomRight().x();
-    int y2 = fixedRectInImage.bottomRight().y();
-    fixedRectInImage.setX(int(round(double(fixedRectInImage.x()) / double(paintImg->width()) * double(inputImg->width()))));
-    fixedRectInImage.setY(int(round(double(fixedRectInImage.y()) / double(paintImg->height()) * double(inputImg->height()))));
-    fixedRectInImage.setWidth(int(round(double(x2) / double(paintImg->width()) * double(inputImg->width()))) - fixedRectInImage.x());
-    fixedRectInImage.setHeight(int(round(double(y2) / double(paintImg->height()) * double(inputImg->height()))) - fixedRectInImage.y());
-    saveImage(inputImg, fixedRectInImage);
+    cropRectInImage = getCropRectInImage(paintImageRect, cropRect[CR_CENTER]);
+    int x2 = cropRectInImage.bottomRight().x();
+    int y2 = cropRectInImage.bottomRight().y();
+    cropRectInImage.setX(int(round(double(cropRectInImage.x()) / double(paintImg->width()) * double(inputImg->width()))));
+    cropRectInImage.setY(int(round(double(cropRectInImage.y()) / double(paintImg->height()) * double(inputImg->height()))));
+    cropRectInImage.setWidth(int(round(double(x2) / double(paintImg->width()) * double(inputImg->width()))) - cropRectInImage.x());
+    cropRectInImage.setHeight(int(round(double(y2) / double(paintImg->height()) * double(inputImg->height()))) - cropRectInImage.y());
+    saveImage(inputImg, cropRectInImage);
 }
 
-void ImageMarquees::saveImage(const QImage* img, QRect rect)
+void ImageMarquees::saveImage(const QImage* img, const QRect& rect)
 {
     // 接受到截取框信息
     if (isLoadImage) {
         if (rect.width() > 0 && rect.height() > 0) {
+            // TODO: 应该可以像opencv的Mat选取ROI避免拷贝
             QImage saveImageTemp = img->copy(rect);
             QString filename
                 = QFileDialog::getSaveFileName(this, tr("Save File"), QCoreApplication::applicationDirPath(), tr("Images (*.png *.xpm *.jpg *.tiff *.bmp)"));
@@ -768,8 +753,8 @@ void ImageWidget::enterCropImageMode()
         ImageMarquees* m = new ImageMarquees(this);
         m->setGeometry(0, 0, this->geometry().width(), this->geometry().height());
         connect(m, SIGNAL(sendSelectModeExit()), this, SLOT(exitCropImageMode()));
-        connect(this, SIGNAL(sendParentWidgetSizeChangedSignal()), m, SLOT(receiveParentSizeChangedSignal()));
-        m->setImage(&inputImg, &paintImg, paintImageRect.topLeft());
+        connect(this, SIGNAL(sendParentWidgetSizeChangedSignal()), m, SLOT(recvParentWidgetSizeChangeSignal()));
+        m->setImage(&inputImg, &paintImg, paintImageRect);
         m->show();
     }
 }
