@@ -22,7 +22,7 @@ class ImageMarquees : public QWidget {
 public:
     ImageMarquees(QWidget* parent = nullptr, int marqueesEdgeWidth = 5);
     ~ImageMarquees();
-    void setImage(QImage* inputImg, QImage* paintImg, const QRect &paintImageRect);
+    void setImage(QImage* inputImg, QImage* paintImg, QRect* paintImageRect);
     void setMarqueesEdgeWidth(int width);
 
 protected:
@@ -47,13 +47,13 @@ private:
     void wheelEvent(QWheelEvent* event);
     bool eventFilter(QObject* watched, QEvent* event);
     void keyPressEvent(QKeyEvent* event);
-    void saveImage(const QImage* img, const QRect &rect);
-    void fixRectInfo(QRect& rect);
-    QRect getCropRectInImage(const QRect &paintImageRect, const QRect &rect);
+    void saveImage(const QImage* img, const QRect& rect);
+    QRect getCropRectInImage(const QRect& paintImageRect, const QRect& rect);
     void calcMarqueesEdgeRect();
     int getSubRectInCropRect(QPoint cursorPos);
     void cropRectChangeEvent(int SR_LOCATION, const QPoint& cursorPos);
     bool keyEscapePressEvent();
+    void showErrorMsgBox(const char *errMsg);
 
     QMenu* mMenu = nullptr;
     QAction* mActionReset = nullptr;
@@ -61,13 +61,13 @@ private:
     QAction* mActionSaveOriginalImage = nullptr;
     QAction* mActionExit = nullptr;
     // CropRect
-    enum { CR_NULL = -1, CR_CENTER, CR_TOPLEFT, CR_TOPRIGHT, CR_BOTTOMRIGHT, CR_BOTTOMLEFT, CR_TOP, CR_RIGHT, CR_BOTTOM, CR_LEFT, CR_ENTIRETY};
+    enum { CR_NULL = -1, CR_CENTER, CR_TOPLEFT, CR_TOPRIGHT, CR_BOTTOMRIGHT, CR_BOTTOMLEFT, CR_TOP, CR_RIGHT, CR_BOTTOM, CR_LEFT, CR_ENTIRETY };
     // Widget中选中的范围
     QRect cropRect[10];
     QRect prevCropRect;
     // Image中选中的范围
     QRect cropRectInImage;
-    QRect paintImageRect;
+    QRect* paintImageRect = nullptr;
     QPoint mouseLeftClickedPos = QPoint(0, 0);
     int mouseStatus;
     QImage* inputImg = nullptr;
@@ -77,6 +77,9 @@ private:
     bool isCropRectExisted = false;
     int cursorPosInCropRect = CR_NULL;
     int marqueesEdgeWidth = 5;
+
+    static const char* ERR_MSG_NULL_IMAGE;
+    static const char* ERR_MSG_INVALID_FILE_PATH;
 };
 
 #endif

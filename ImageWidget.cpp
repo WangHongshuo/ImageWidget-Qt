@@ -18,12 +18,15 @@
 #include <string>
 
 // static const var
+const char* ImageMarquees::ERR_MSG_NULL_IMAGE = "No Image Selected!";
+const char* ImageMarquees::ERR_MSG_INVALID_FILE_PATH = "Invalid File Path!";
+
 const QImage ImageWidget::NULL_QIMAGE = QImage();
 const QPoint ImageWidget::NULL_POINT = QPoint(0, 0);
 const QSize ImageWidget::NULL_SIZE = QSize(0, 0);
 const QRect ImageWidget::NULL_RECT = QRect(0, 0, 0, 0);
 
-ImageMarquees::ImageMarquees(QWidget *parent, int marqueesEdgeWidtht)
+ImageMarquees::ImageMarquees(QWidget* parent, int marqueesEdgeWidtht)
     : QWidget(parent)
 {
     mouseStatus = Qt::NoButton;
@@ -49,10 +52,11 @@ ImageMarquees::~ImageMarquees()
 {
     inputImg = nullptr;
     paintImg = nullptr;
+    paintImageRect = nullptr;
     mMenu = nullptr;
 }
 
-void ImageMarquees::setImage(QImage* inputImg, QImage* paintImg, const QRect &paintImageRect)
+void ImageMarquees::setImage(QImage* inputImg, QImage* paintImg, QRect* paintImageRect)
 {
     this->inputImg = inputImg;
     this->paintImg = paintImg;
@@ -66,7 +70,6 @@ void ImageMarquees::recvParentWidgetSizeChangeSignal()
 {
     ImageWidget* parentWidget = static_cast<ImageWidget*>(this->parent());
     this->setGeometry(0, 0, parentWidget->width(), parentWidget->height());
-    paintImageRect.moveTo(parentWidget->getDrawImageTopLeftPos());
     update();
 }
 
@@ -86,8 +89,8 @@ void ImageMarquees::paintEvent(QPaintEvent* event)
             cropArea.addRect(cropRect[i]);
         painter.fillPath(cropArea, QBrush(QColor(0, 140, 255, 255)));
     } else {
-            painter.setPen(QPen(QColor(255, 0, 0, 255), 1));
-            painter.drawRect(cropRect[CR_CENTER]);
+        painter.setPen(QPen(QColor(255, 0, 0, 255), 1));
+        painter.drawRect(cropRect[CR_CENTER]);
     }
 }
 
@@ -133,8 +136,12 @@ void ImageMarquees::mouseMoveEvent(QMouseEvent* event)
 void ImageMarquees::mouseReleaseEvent(QMouseEvent* event)
 {
     if (mouseStatus == Qt::LeftButton) {
-        // 修正RectInfo::w和RectInfo::h为正
-        fixRectInfo(cropRect[CR_CENTER]);
+        // 修正width,height为正
+        cropRect[CR_CENTER] = cropRect[CR_CENTER].normalized();
+        // 限定初次画选取框在widget内
+        if (cursorPosInCropRect == CR_NULL) {
+            cropRect[CR_CENTER] = this->rect().intersected(cropRect[CR_CENTER]);
+        }
         // 备份
         prevCropRect = cropRect[CR_CENTER];
         mouseStatus = Qt::NoButton;
@@ -188,6 +195,7 @@ QRect ImageMarquees::getCropRectInImage(const QRect& paintImageRect, const QRect
 
 void ImageMarquees::calcMarqueesEdgeRect()
 {
+    // TODO: 减少计算量或QRect数量
     cropRect[CR_TOPLEFT].setTopLeft(cropRect[CR_CENTER].topLeft() + QPoint(-marqueesEdgeWidth, -marqueesEdgeWidth));
     cropRect[CR_TOPLEFT].setBottomRight(cropRect[CR_CENTER].topLeft() + QPoint(-1, -1));
 
@@ -202,7 +210,6 @@ void ImageMarquees::calcMarqueesEdgeRect()
 
     cropRect[CR_TOP].setTopLeft(cropRect[CR_TOPLEFT].topRight() + QPoint(1, 0));
     cropRect[CR_TOP].setBottomRight(cropRect[CR_TOPRIGHT].bottomLeft() + QPoint(-1, 0));
-
 
     cropRect[CR_RIGHT].setTopLeft(cropRect[CR_TOPRIGHT].bottomLeft() + QPoint(0, 1));
     cropRect[CR_RIGHT].setBottomRight(cropRect[CR_BOTTOMRIGHT].topRight() + QPoint(0, -1));
@@ -219,7 +226,7 @@ void ImageMarquees::calcMarqueesEdgeRect()
 
 int ImageMarquees::getSubRectInCropRect(QPoint cursorPos)
 {
-    // 可用树结构减少if
+    // TODO: 减少contains调用
     if (cropRect[CR_CENTER].contains(cursorPos)) {
         this->setCursor(Qt::SizeAllCursor);
         return CR_CENTER;
@@ -261,23 +268,12 @@ int ImageMarquees::getSubRectInCropRect(QPoint cursorPos)
 
 void ImageMarquees::cropRectChangeEvent(int SR_LOCATION, const QPoint& cursorPos)
 {
-    int x = cursorPos.x();
-    int y = cursorPos.y();
     switch (SR_LOCATION) {
     case CR_NULL:
         // 限定在mask内
         cropRect[CR_CENTER].setTopLeft(mouseLeftClickedPos);
-        if (x < 0)
-            x = 0;
-        else if (x > this->width())
-            x = this->width();
-        if (y < 0)
-            y = 0;
-        else if (y > this->height())
-            y = this->height();
-        cropRect[CR_CENTER].setWidth(x - cropRect[CR_CENTER].x());
-        cropRect[CR_CENTER].setHeight(y - cropRect[CR_CENTER].y());
-        fixRectInfo(cropRect[CR_CENTER]);
+        cropRect[CR_CENTER].setWidth(cursorPos.x() - mouseLeftClickedPos.x());
+        cropRect[CR_CENTER].setHeight(cursorPos.y() - mouseLeftClickedPos.y());
         break;
     case CR_CENTER:
         cropRect[CR_CENTER].moveTo(prevCropRect.topLeft() + (cursorPos - mouseLeftClickedPos));
@@ -321,6 +317,12 @@ bool ImageMarquees::keyEscapePressEvent()
     return true;
 }
 
+void ImageMarquees::showErrorMsgBox(const char* errMsg)
+{
+    QMessageBox msgBox(QMessageBox::Critical, tr("ERROR"), tr(errMsg));
+    msgBox.exec();
+}
+
 void ImageMarquees::exit()
 {
     emit sendExitSignal();
@@ -344,13 +346,13 @@ void ImageMarquees::reset()
 
 void ImageMarquees::cropPaintImage()
 {
-    cropRectInImage = getCropRectInImage(paintImageRect, cropRect[CR_CENTER]);
+    cropRectInImage = getCropRectInImage(*paintImageRect, cropRect[CR_CENTER]);
     saveImage(paintImg, cropRectInImage);
 }
 
 void ImageMarquees::cropOriginalImage()
 {
-    cropRectInImage = getCropRectInImage(paintImageRect, cropRect[CR_CENTER]);
+    cropRectInImage = getCropRectInImage(*paintImageRect, cropRect[CR_CENTER]);
     int x2 = cropRectInImage.bottomRight().x();
     int y2 = cropRectInImage.bottomRight().y();
     cropRectInImage.setX(int(round(double(cropRectInImage.x()) / double(paintImg->width()) * double(inputImg->width()))));
@@ -363,39 +365,19 @@ void ImageMarquees::cropOriginalImage()
 void ImageMarquees::saveImage(const QImage* img, const QRect& rect)
 {
     // 接受到截取框信息
-    if (isLoadImage) {
-        if (rect.width() > 0 && rect.height() > 0) {
-            // TODO: 应该可以像opencv的Mat选取ROI避免拷贝
-            QImage saveImageTemp = img->copy(rect);
-            QString filename
-                = QFileDialog::getSaveFileName(this, tr("Save File"), QCoreApplication::applicationDirPath(), tr("Images (*.png *.xpm *.jpg *.tiff *.bmp)"));
-            if (!filename.isEmpty() || !filename.isNull())
-                saveImageTemp.save(filename);
-        } else {
-            QMessageBox msgBox(QMessageBox::Critical, tr("错误!"), tr("未选中图像!")); // Error! No Image Selected!
-            msgBox.exec();
-        }
-    } else {
-        QMessageBox msgBox(QMessageBox::Critical, tr("错误!"), tr("未选中图像!")); // Error! No Image Selected!
-        msgBox.exec();
+    if (!isLoadImage || !img || img->isNull() || rect.width() <= 0 || rect.height() <= 0) {
+        showErrorMsgBox(ERR_MSG_NULL_IMAGE);
+        return;
     }
-}
-
-void ImageMarquees::fixRectInfo(QRect& rect)
-{
-    QPoint topLeft = rect.topLeft();
-    int width = rect.width();
-    int height = rect.height();
-    if (width < 0) {
-        topLeft.setX(topLeft.x() + width);
-        width = -width;
+    // TODO: 应该可以像opencv的Mat选取ROI避免拷贝
+    QString filename
+        = QFileDialog::getSaveFileName(this, tr("Save File"), QCoreApplication::applicationDirPath(), tr("Images(*.bmp *.jpg *.png *.xpm *.tiff )"));
+    if (filename.isEmpty() || filename.isNull()) {
+        showErrorMsgBox(ERR_MSG_INVALID_FILE_PATH);
+        return;
     }
-    if (height < 0) {
-        topLeft.setY(topLeft.y() + height);
-        height = -height;
-    }
-    rect.setTopLeft(topLeft);
-    rect.setSize(QSize(width, height));
+    QImage saveImageTemp = img->copy(rect);
+    saveImageTemp.save(filename);
 }
 
 ImageWidget::ImageWidget(QWidget* parent)
@@ -752,9 +734,9 @@ void ImageWidget::enterCropImageMode()
         isCropImageMode = true;
         ImageMarquees* m = new ImageMarquees(this);
         m->setGeometry(0, 0, this->geometry().width(), this->geometry().height());
-        connect(m, SIGNAL(sendSelectModeExit()), this, SLOT(exitCropImageMode()));
+        connect(m, SIGNAL(sendExitSignal()), this, SLOT(exitCropImageMode()));
         connect(this, SIGNAL(sendParentWidgetSizeChangedSignal()), m, SLOT(recvParentWidgetSizeChangeSignal()));
-        m->setImage(&inputImg, &paintImg, paintImageRect);
+        m->setImage(&inputImg, &paintImg, &paintImageRect);
         m->show();
     }
 }
