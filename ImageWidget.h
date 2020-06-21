@@ -16,6 +16,7 @@
 #define IMAGEMARQUEES_H
 
 // Common function
+QPoint getCursorPosInImage(const QImage& originalImage, const QImage& zoomedImage, const QPoint& imageLeftTopPos, const QPoint& cursorPos);
 
 class ImageMarquees : public QWidget {
     Q_OBJECT
@@ -87,6 +88,12 @@ private:
 class ImageWidget : public QWidget {
     Q_OBJECT
 public:
+    // 静态空图像 用于释放内存
+    static const QImage NULL_QIMAGE;
+    // 静态变量 图像尺寸相关
+    static const QPoint NULL_POINT;
+    static const QSize NULL_SIZE;
+    static const QRect NULL_RECT;
     // 图像限定模式
     enum RestrictMode { RM_INNER, RM_OUTTER };
 
@@ -131,12 +138,6 @@ private slots:
 
 protected:
 private:
-    // 静态空图像 用于释放内存
-    static const QImage NULL_QIMAGE;
-    // 静态变量 图像尺寸相关
-    static const QPoint NULL_POINT;
-    static const QSize NULL_SIZE;
-    static const QRect NULL_RECT;
     // 放大倍率
     double MAX_ZOOM_SCALE = 20.0;
     double MIN_ZOOM_SCALE = 0.04;
@@ -194,7 +195,6 @@ private:
     void imageZoomIn();
     void initializeContextmenu();
     void sendLeftClickedSignals(QMouseEvent* e);
-    QPoint getCursorPosInImage(const QImage& originalImage, const QImage& zoomedImage, const QPoint& imageLeftTopPos, const QPoint& cursorPos);
     void setDefaultParameters();
     QPoint getImageTopLeftPosWhenShowInCenter(const QImage& img, const QWidget* iw);
     // R1

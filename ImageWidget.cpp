@@ -353,12 +353,10 @@ void ImageMarquees::cropPaintImage()
 void ImageMarquees::cropOriginalImage()
 {
     cropRectInImage = getCropRectInImage(*paintImageRect, cropRect[CR_CENTER]);
-    int x2 = cropRectInImage.bottomRight().x();
-    int y2 = cropRectInImage.bottomRight().y();
-    cropRectInImage.setX(int(round(double(cropRectInImage.x()) / double(paintImg->width()) * double(inputImg->width()))));
-    cropRectInImage.setY(int(round(double(cropRectInImage.y()) / double(paintImg->height()) * double(inputImg->height()))));
-    cropRectInImage.setWidth(int(round(double(x2) / double(paintImg->width()) * double(inputImg->width()))) - cropRectInImage.x());
-    cropRectInImage.setHeight(int(round(double(y2) / double(paintImg->height()) * double(inputImg->height()))) - cropRectInImage.y());
+    QPoint topLeft = getCursorPosInImage(*inputImg, *paintImg, ImageWidget::NULL_POINT, cropRectInImage.topLeft());
+    QPoint bottomRight = getCursorPosInImage(*inputImg, *paintImg, ImageWidget::NULL_POINT, cropRectInImage.bottomRight());
+    cropRectInImage.setTopLeft(topLeft);
+    cropRectInImage.setBottomRight(bottomRight);
     saveImage(inputImg, cropRectInImage);
 }
 
@@ -791,7 +789,7 @@ void ImageWidget::sendLeftClickedSignals(QMouseEvent* e)
     }
 }
 
-QPoint ImageWidget::getCursorPosInImage(const QImage& originalImage, const QImage& zoomedImage, const QPoint& imageLeftTopPos, const QPoint& cursorPos)
+QPoint getCursorPosInImage(const QImage& originalImage, const QImage& zoomedImage, const QPoint& imageLeftTopPos, const QPoint& cursorPos)
 {
     // 计算当前光标在原始图像坐标系中相对于图像原点的位置
     QPoint resPoint;
