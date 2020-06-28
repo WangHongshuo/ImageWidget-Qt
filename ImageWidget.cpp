@@ -353,8 +353,8 @@ void ImageMarquees::cropPaintImage()
 void ImageMarquees::cropOriginalImage()
 {
     cropRectInImage = getCropRectInImage(*paintImageRect, cropRect[CR_CENTER]);
-    QPoint topLeft = getCursorPosInImage(*inputImg, *paintImg, ImageWidget::NULL_POINT, cropRectInImage.topLeft());
-    QPoint bottomRight = getCursorPosInImage(*inputImg, *paintImg, ImageWidget::NULL_POINT, cropRectInImage.bottomRight());
+    QPoint topLeft = getCursorPosInImage(inputImg->rect(), paintImg->rect(), cropRectInImage.topLeft(), std::round);
+    QPoint bottomRight = getCursorPosInImage(inputImg->rect(), paintImg->rect(), cropRectInImage.bottomRight(), std::round) - QPoint(1, 1);
     cropRectInImage.setTopLeft(topLeft);
     cropRectInImage.setBottomRight(bottomRight);
     saveImage(inputImg, cropRectInImage);
@@ -777,7 +777,7 @@ void ImageWidget::sendLeftClickedSignals(QMouseEvent* e)
         if (inputImg.isNull()) {
             emit sendLeftClickedPosInImageSignal(-1, -1);
         } else {
-            QPoint cursorPosInImage = getCursorPosInImage(inputImg, paintImg, paintImageRect.topLeft(), e->pos());
+            QPoint cursorPosInImage = getCursorPosInImage(inputImg.rect(), paintImageRect, e->pos(), std::floor);
             // 如果光标不在图像上则返回-1
             if (cursorPosInImage.x() < 0 || cursorPosInImage.y() < 0 || cursorPosInImage.x() > inputImg.width() - 1
                 || cursorPosInImage.y() > inputImg.height() - 1) {
@@ -789,16 +789,19 @@ void ImageWidget::sendLeftClickedSignals(QMouseEvent* e)
     }
 }
 
-QPoint getCursorPosInImage(const QImage& originalImage, const QImage& zoomedImage, const QPoint& imageLeftTopPos, const QPoint& cursorPos)
+QPoint getCursorPosInImage(const QRect& inputImgRect, const QRect& paintImgRect, const QPoint& cursorPos, double (*procFunc)(double))
 {
     // 计算当前光标在原始图像坐标系中相对于图像原点的位置
     QPoint resPoint;
-    int distanceX = cursorPos.x() - imageLeftTopPos.x();
-    int distanceY = cursorPos.y() - imageLeftTopPos.y();
-    double xDivZoomedImageW = double(distanceX) / double(zoomedImage.width());
-    double yDivZoomedImageH = double(distanceY) / double(zoomedImage.height());
-    resPoint.setX(int(std::floor(originalImage.width() * xDivZoomedImageW)));
-    resPoint.setY(int(std::floor(originalImage.height() * yDivZoomedImageH)));
+    if (procFunc == nullptr) {
+        return resPoint;
+    }
+    int distanceX = cursorPos.x() - paintImgRect.x();
+    int distanceY = cursorPos.y() - paintImgRect.y();
+    double xDivZoomedImageW = double(distanceX) / double(paintImgRect.width());
+    double yDivZoomedImageH = double(distanceY) / double(paintImgRect.height());
+    resPoint.setX(int(procFunc(inputImgRect.width() * xDivZoomedImageW)));
+    resPoint.setY(int(procFunc(inputImgRect.height() * yDivZoomedImageH)));
     return resPoint;
 }
 
@@ -840,7 +843,7 @@ void ImageWidget::updateZoomedImage()
         QSize zoomedImageChanged = lastPaintImgSize - paintImg.size();
         // 获取当前光标并计算出光标在图像中的位置
         QPoint cursorPosInWidget = this->mapFromGlobal(QCursor::pos());
-        QPoint cursorPosInImage = getCursorPosInImage(inputImg, paintImg, paintImageRect.topLeft(), cursorPosInWidget);
+        QPoint cursorPosInImage = getCursorPosInImage(inputImg.rect(), paintImageRect, cursorPosInWidget, std::floor);
         if (cursorPosInImage.x() < 0) {
             cursorPosInImage.setX(0);
         }

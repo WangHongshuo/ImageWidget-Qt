@@ -16,7 +16,7 @@
 #define IMAGEMARQUEES_H
 
 // Common function
-QPoint getCursorPosInImage(const QImage& originalImage, const QImage& zoomedImage, const QPoint& imageLeftTopPos, const QPoint& cursorPos);
+QPoint getCursorPosInImage(const QRect &inputImgRect, const QRect &imageLeftTopPos, const QPoint& cursorPos, double (*procFunc)(double));
 
 class ImageMarquees : public QWidget {
     Q_OBJECT
