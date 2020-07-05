@@ -16,12 +16,12 @@
 #define IMAGEMARQUEES_H
 
 // Common function
-QPoint getCursorPosInImage(const QRect &inputImgRect, const QRect &imageLeftTopPos, const QPoint& cursorPos, double (*procFunc)(double));
+QPoint getCursorPosInImage(const QRect& inputImgRect, const QRect& imageLeftTopPos, const QPoint& cursorPos, double (*procFunc)(double));
 
 class ImageMarquees : public QWidget {
     Q_OBJECT
 public:
-    ImageMarquees(QWidget* parent = nullptr, int marqueesEdgeWidth = 5);
+    ImageMarquees(QWidget* parent = nullptr, int marqueesEdgeWidth = 10);
     ~ImageMarquees();
     void setImage(QImage* inputImg, QImage* paintImg, QRect* paintImageRect);
     void setMarqueesEdgeWidth(int width);
@@ -54,17 +54,20 @@ private:
     int getSubRectInCropRect(QPoint cursorPos);
     void cropRectChangeEvent(int SR_LOCATION, const QPoint& cursorPos);
     bool keyEscapePressEvent();
-    void showErrorMsgBox(const char *errMsg);
+    void showErrorMsgBox(const char* errMsg);
 
     QMenu* mMenu = nullptr;
     QAction* mActionReset = nullptr;
     QAction* mActionSavePaintImage = nullptr;
     QAction* mActionSaveOriginalImage = nullptr;
     QAction* mActionExit = nullptr;
-    // CropRect
-    enum { CR_NULL = -1, CR_CENTER, CR_TOPLEFT, CR_TOPRIGHT, CR_BOTTOMRIGHT, CR_BOTTOMLEFT, CR_TOP, CR_RIGHT, CR_BOTTOM, CR_LEFT, CR_ENTIRETY };
+    // CropRect，CR_TOPLEFT, CR_TOPRIGHT, CR_BOTTOMRIGHT, CR_BOTTOMLEFT必须连续在一起
+    enum CROPRECT { CR_NULL = -1, CR_CENTER, CR_TOPLEFT, CR_TOPRIGHT, CR_BOTTOMRIGHT, CR_BOTTOMLEFT, CR_ENTIRETY, CR_TOP, CR_RIGHT, CR_BOTTOM, CR_LEFT};
+    static const CROPRECT CROPRECTGRP[3][3];
+    static const Qt::CursorShape CURSORCRP[11];
     // Widget中选中的范围
-    QRect cropRect[10];
+    QRect cropRect[6];
+    int cropRectPoints[2][4];
     QRect prevCropRect;
     // Image中选中的范围
     QRect cropRectInImage;
