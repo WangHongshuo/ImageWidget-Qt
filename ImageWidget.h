@@ -8,6 +8,7 @@
 #include <QMenu>
 #include <QPainter>
 #include <QWidget>
+#include <unordered_map>
 
 #ifndef IMAGEWIDGET_H
 #define IMAGEWIDGET_H
@@ -40,33 +41,16 @@ private slots:
     void cropOriginalImage();
 
 private:
-    void paintEvent(QPaintEvent* event);
-    void mousePressEvent(QMouseEvent* event);
-    void mouseMoveEvent(QMouseEvent* event);
-    void mouseReleaseEvent(QMouseEvent* event);
-    void contextMenuEvent(QContextMenuEvent* event);
-    void wheelEvent(QWheelEvent* event);
-    bool eventFilter(QObject* watched, QEvent* event);
-    void keyPressEvent(QKeyEvent* event);
-    void saveImage(const QImage* img, const QRect& rect);
-    QRect getCropRectInImage(const QRect& paintImageRect, const QRect& rect);
-    void calcMarqueesEdgeRect();
-    int getSubRectInCropRect(QPoint cursorPos);
-    void cropRectChangeEvent(int SR_LOCATION, const QPoint& cursorPos);
-    bool keyEscapePressEvent();
-    void showErrorMsgBox(const char* errMsg);
-
-    QMenu* mMenu = nullptr;
-    QAction* mActionReset = nullptr;
-    QAction* mActionSavePaintImage = nullptr;
-    QAction* mActionSaveOriginalImage = nullptr;
-    QAction* mActionExit = nullptr;
-    // CropRect，CR_TOPLEFT, CR_TOPRIGHT, CR_BOTTOMRIGHT, CR_BOTTOMLEFT必须连续在一起
-    enum CROPRECT { CR_NULL = -1, CR_CENTER, CR_TOPLEFT, CR_TOPRIGHT, CR_BOTTOMRIGHT, CR_BOTTOMLEFT, CR_ENTIRETY, CR_TOP, CR_RIGHT, CR_BOTTOM, CR_LEFT};
+    enum CROPRECT { CR_NULL = -1, CR_CENTER, CR_TOPLEFT, CR_TOPRIGHT, CR_BOTTOMRIGHT, CR_BOTTOMLEFT, CR_ENTIRETY, CR_TOP, CR_RIGHT, CR_BOTTOM, CR_LEFT };
+    const static std::unordered_map<CROPRECT, Qt::CursorShape> CURSORCRPS;
     static const CROPRECT CROPRECTGRP[3][3];
-    static const Qt::CursorShape CURSORCRP[11];
+    static const char* ERR_MSG_NULL_IMAGE;
+    static const char* ERR_MSG_INVALID_FILE_PATH;
+
     // Widget中选中的范围
-    QRect cropRect[6];
+    std::unordered_map<CROPRECT, QRect*> cropRectCorners;
+    std::unordered_map<CROPRECT, QRect> cropRects;
+
     int cropRectPoints[2][4];
     QRect prevCropRect;
     // Image中选中的范围
@@ -79,11 +63,30 @@ private:
     bool isLoadImage = false;
     bool isCropRectStable = false;
     bool isCropRectExisted = false;
-    int cursorPosInCropRect = CR_NULL;
+    CROPRECT cursorPosInCropRect = CR_NULL;
     int marqueesEdgeWidth = 5;
 
-    static const char* ERR_MSG_NULL_IMAGE;
-    static const char* ERR_MSG_INVALID_FILE_PATH;
+    QMenu* mMenu = nullptr;
+    QAction* mActionReset = nullptr;
+    QAction* mActionSavePaintImage = nullptr;
+    QAction* mActionSaveOriginalImage = nullptr;
+    QAction* mActionExit = nullptr;
+
+    void paintEvent(QPaintEvent* event);
+    void mousePressEvent(QMouseEvent* event);
+    void mouseMoveEvent(QMouseEvent* event);
+    void mouseReleaseEvent(QMouseEvent* event);
+    void contextMenuEvent(QContextMenuEvent* event);
+    void wheelEvent(QWheelEvent* event);
+    bool eventFilter(QObject* watched, QEvent* event);
+    void keyPressEvent(QKeyEvent* event);
+    void saveImage(const QImage* img, const QRect& rect);
+    QRect getCropRectInImage(const QRect& paintImageRect, const QRect& rect);
+    void calcMarqueesEdgeRect();
+    CROPRECT getSubRectInCropRect(QPoint cursorPos);
+    void cropRectChangeEvent(int SR_LOCATION, const QPoint& cursorPos);
+    bool keyEscapePressEvent();
+    void showErrorMsgBox(const char* errMsg);
 };
 
 #endif

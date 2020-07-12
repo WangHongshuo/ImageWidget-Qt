@@ -23,8 +23,12 @@ const char* ImageMarquees::ERR_MSG_INVALID_FILE_PATH = "Invalid File Path!";
 const ImageMarquees::CROPRECT ImageMarquees::CROPRECTGRP[3][3] = { { ImageMarquees::CR_TOPLEFT, ImageMarquees::CR_TOP, ImageMarquees::CR_TOPRIGHT },
     { ImageMarquees::CR_LEFT, ImageMarquees::CR_CENTER, ImageMarquees::CR_RIGHT },
     { ImageMarquees::CR_BOTTOMLEFT, ImageMarquees::CR_BOTTOM, ImageMarquees::CR_BOTTOMRIGHT } };
-const Qt::CursorShape ImageMarquees::CURSORCRP[11] = { Qt::ArrowCursor, Qt::SizeAllCursor, Qt::SizeFDiagCursor, Qt::SizeBDiagCursor, Qt::SizeFDiagCursor,
-    Qt::SizeBDiagCursor, Qt::SizeAllCursor, Qt::SizeVerCursor, Qt::SizeHorCursor, Qt::SizeVerCursor, Qt::SizeHorCursor };
+const std::unordered_map<ImageMarquees::CROPRECT, Qt::CursorShape> ImageMarquees::CURSORCRPS = std::unordered_map<ImageMarquees::CROPRECT, Qt::CursorShape> {
+    { ImageMarquees::CR_NULL, Qt::ArrowCursor }, { ImageMarquees::CR_CENTER, Qt::SizeAllCursor }, { ImageMarquees::CR_TOPLEFT, Qt::SizeFDiagCursor },
+    { ImageMarquees::CR_TOPRIGHT, Qt::SizeBDiagCursor }, { ImageMarquees::CR_BOTTOMRIGHT, Qt::SizeFDiagCursor },
+    { ImageMarquees::CR_BOTTOMLEFT, Qt::SizeBDiagCursor }, { ImageMarquees::CR_ENTIRETY, Qt::SizeAllCursor }, { ImageMarquees::CR_TOP, Qt::SizeVerCursor },
+    { ImageMarquees::CR_RIGHT, Qt::SizeHorCursor }, { ImageMarquees::CR_BOTTOM, Qt::SizeVerCursor }, { ImageMarquees::CR_LEFT, Qt::SizeHorCursor }
+};
 
 const QImage ImageWidget::NULL_QIMAGE = QImage();
 const QPoint ImageWidget::NULL_POINT = QPoint(0, 0);
@@ -51,6 +55,10 @@ ImageMarquees::ImageMarquees(QWidget* parent, int marqueesEdgeWidtht)
     // 关闭后释放资源
     this->setAttribute(Qt::WA_DeleteOnClose);
     this->setFocusPolicy(Qt::StrongFocus);
+    cropRects = std::unordered_map<CROPRECT, QRect> { { CR_CENTER, QRect() }, { CR_TOPLEFT, QRect() }, { CR_TOPRIGHT, QRect() }, { CR_BOTTOMRIGHT, QRect() },
+        { CR_BOTTOMLEFT, QRect() }, { CR_ENTIRETY, QRect() } };
+    cropRectCorners = std::unordered_map<CROPRECT, QRect*> { { CR_TOPLEFT, &cropRects[CR_TOPLEFT] }, { CR_TOPRIGHT, &cropRects[CR_TOPRIGHT] },
+        { CR_BOTTOMLEFT, &cropRects[CR_BOTTOMLEFT] }, { CR_BOTTOMRIGHT, &cropRects[CR_BOTTOMRIGHT] } };
 }
 
 ImageMarquees::~ImageMarquees()
@@ -88,20 +96,20 @@ void ImageMarquees::paintEvent(QPaintEvent* event)
 {
     QPainterPath transparentArea, cropArea;
     transparentArea.addRect(this->geometry());
-    cropArea.addRect(cropRect[CR_CENTER]);
+    cropArea.addRect(cropRects[CR_CENTER]);
     transparentArea = transparentArea.subtracted(cropArea);
     QPainter painter(this);
     painter.fillPath(transparentArea, QBrush(QColor(0, 0, 0, 160)));
     if (isCropRectStable) {
         painter.setPen(QPen(QColor(0, 140, 255, 255), 1));
-        painter.drawRect(cropRect[CR_CENTER]);
+        painter.drawRect(cropRects[CR_CENTER]);
         cropArea.clear();
-        for (int i = CR_TOPLEFT; i <= CR_BOTTOMLEFT; i++)
-            cropArea.addRect(cropRect[i]);
+        for (auto r:cropRectCorners)
+            cropArea.addRect(*(r.second));
         painter.fillPath(cropArea, QBrush(QColor(0, 140, 255, 255)));
     } else {
         painter.setPen(QPen(QColor(255, 0, 0, 255), 1));
-        painter.drawRect(cropRect[CR_CENTER]);
+        painter.drawRect(cropRects[CR_CENTER]);
     }
 }
 
@@ -135,12 +143,12 @@ void ImageMarquees::mouseMoveEvent(QMouseEvent* event)
     }
     // 判断鼠标是否在矩形框内
     if (mouseStatus == Qt::NoButton && isCropRectStable) {
-        if (cropRect[CR_ENTIRETY].contains(event->pos())) {
+        if (cropRects[CR_ENTIRETY].contains(event->pos())) {
             cursorPosInCropRect = getSubRectInCropRect(event->pos());
         } else {
             cursorPosInCropRect = CR_NULL;
         }
-        this->setCursor(CURSORCRP[cursorPosInCropRect + 1]);
+        this->setCursor(CURSORCRPS.at(cursorPosInCropRect));
     }
 }
 
@@ -148,13 +156,13 @@ void ImageMarquees::mouseReleaseEvent(QMouseEvent* event)
 {
     if (mouseStatus == Qt::LeftButton) {
         // 修正width,height为正
-        cropRect[CR_CENTER] = cropRect[CR_CENTER].normalized();
+        cropRects[CR_CENTER] = cropRects[CR_CENTER].normalized();
         // 限定初次画选取框在widget内
         if (cursorPosInCropRect == CR_NULL) {
-            cropRect[CR_CENTER] = this->rect().intersected(cropRect[CR_CENTER]);
+            cropRects[CR_CENTER] = this->rect().intersected(cropRects[CR_CENTER]);
         }
         // 备份
-        prevCropRect = cropRect[CR_CENTER];
+        prevCropRect = cropRects[CR_CENTER];
         mouseStatus = Qt::NoButton;
         calcMarqueesEdgeRect();
         isCropRectStable = true;
@@ -207,33 +215,33 @@ QRect ImageMarquees::getCropRectInImage(const QRect& paintImageRect, const QRect
 void ImageMarquees::calcMarqueesEdgeRect()
 {
     // TODO: 减少计算量或QRect数量
-    cropRect[CR_TOPLEFT].setTopLeft(cropRect[CR_CENTER].topLeft() + QPoint(-marqueesEdgeWidth, -marqueesEdgeWidth));
-    cropRect[CR_TOPLEFT].setBottomRight(cropRect[CR_CENTER].topLeft() + QPoint(-1, -1));
+    cropRects[CR_TOPLEFT].setTopLeft(cropRects[CR_CENTER].topLeft() + QPoint(-marqueesEdgeWidth, -marqueesEdgeWidth));
+    cropRects[CR_TOPLEFT].setBottomRight(cropRects[CR_CENTER].topLeft() + QPoint(-1, -1));
 
-    cropRect[CR_TOPRIGHT].setTopRight(cropRect[CR_CENTER].topRight() + QPoint(marqueesEdgeWidth, -marqueesEdgeWidth));
-    cropRect[CR_TOPRIGHT].setBottomLeft(cropRect[CR_CENTER].topRight() + QPoint(1, -1));
+    cropRects[CR_TOPRIGHT].setTopRight(cropRects[CR_CENTER].topRight() + QPoint(marqueesEdgeWidth, -marqueesEdgeWidth));
+    cropRects[CR_TOPRIGHT].setBottomLeft(cropRects[CR_CENTER].topRight() + QPoint(1, -1));
 
-    cropRect[CR_BOTTOMRIGHT].setTopLeft(cropRect[CR_CENTER].bottomRight() + QPoint(1, 1));
-    cropRect[CR_BOTTOMRIGHT].setBottomRight(cropRect[CR_CENTER].bottomRight() + QPoint(marqueesEdgeWidth, marqueesEdgeWidth));
+    cropRects[CR_BOTTOMRIGHT].setTopLeft(cropRects[CR_CENTER].bottomRight() + QPoint(1, 1));
+    cropRects[CR_BOTTOMRIGHT].setBottomRight(cropRects[CR_CENTER].bottomRight() + QPoint(marqueesEdgeWidth, marqueesEdgeWidth));
 
-    cropRect[CR_BOTTOMLEFT].setTopRight(cropRect[CR_CENTER].bottomLeft() + QPoint(-1, 1));
-    cropRect[CR_BOTTOMLEFT].setBottomLeft(cropRect[CR_CENTER].bottomLeft() + QPoint(-marqueesEdgeWidth, marqueesEdgeWidth));
+    cropRects[CR_BOTTOMLEFT].setTopRight(cropRects[CR_CENTER].bottomLeft() + QPoint(-1, 1));
+    cropRects[CR_BOTTOMLEFT].setBottomLeft(cropRects[CR_CENTER].bottomLeft() + QPoint(-marqueesEdgeWidth, marqueesEdgeWidth));
 
-    cropRect[CR_ENTIRETY].setTopLeft(cropRect[CR_TOPLEFT].topLeft());
-    cropRect[CR_ENTIRETY].setBottomRight(cropRect[CR_BOTTOMRIGHT].bottomRight());
+    cropRects[CR_ENTIRETY].setTopLeft(cropRects[CR_TOPLEFT].topLeft());
+    cropRects[CR_ENTIRETY].setBottomRight(cropRects[CR_BOTTOMRIGHT].bottomRight());
 
-    cropRectPoints[0][0] = cropRect[CR_TOPLEFT].left();
-    cropRectPoints[0][1] = cropRect[CR_TOPLEFT].right();
-    cropRectPoints[0][2] = cropRect[CR_TOPRIGHT].left();
-    cropRectPoints[0][3] = cropRect[CR_TOPRIGHT].right();
+    cropRectPoints[0][0] = cropRects[CR_TOPLEFT].left();
+    cropRectPoints[0][1] = cropRects[CR_TOPLEFT].right();
+    cropRectPoints[0][2] = cropRects[CR_TOPRIGHT].left();
+    cropRectPoints[0][3] = cropRects[CR_TOPRIGHT].right();
 
-    cropRectPoints[1][0] = cropRect[CR_TOPLEFT].top();
-    cropRectPoints[1][1] = cropRect[CR_TOPLEFT].bottom();
-    cropRectPoints[1][2] = cropRect[CR_BOTTOMLEFT].top();
-    cropRectPoints[1][3] = cropRect[CR_BOTTOMLEFT].bottom();
+    cropRectPoints[1][0] = cropRects[CR_TOPLEFT].top();
+    cropRectPoints[1][1] = cropRects[CR_TOPLEFT].bottom();
+    cropRectPoints[1][2] = cropRects[CR_BOTTOMLEFT].top();
+    cropRectPoints[1][3] = cropRects[CR_BOTTOMLEFT].bottom();
 }
 
-int ImageMarquees::getSubRectInCropRect(QPoint cursorPos)
+ImageMarquees::CROPRECT ImageMarquees::getSubRectInCropRect(QPoint cursorPos)
 {
     int col = -1, row = -1;
     if (cursorPos.x() >= cropRectPoints[0][0] && cursorPos.x() <= cropRectPoints[0][1]) {
@@ -261,36 +269,36 @@ void ImageMarquees::cropRectChangeEvent(int SR_LOCATION, const QPoint& cursorPos
     switch (SR_LOCATION) {
     case CR_NULL:
         // 限定在mask内
-        cropRect[CR_CENTER].setTopLeft(mouseLeftClickedPos);
-        cropRect[CR_CENTER].setWidth(cursorPos.x() - mouseLeftClickedPos.x());
-        cropRect[CR_CENTER].setHeight(cursorPos.y() - mouseLeftClickedPos.y());
+        cropRects[CR_CENTER].setTopLeft(mouseLeftClickedPos);
+        cropRects[CR_CENTER].setWidth(cursorPos.x() - mouseLeftClickedPos.x());
+        cropRects[CR_CENTER].setHeight(cursorPos.y() - mouseLeftClickedPos.y());
         break;
     case CR_CENTER:
-        cropRect[CR_CENTER].moveTo(prevCropRect.topLeft() + (cursorPos - mouseLeftClickedPos));
+        cropRects[CR_CENTER].moveTo(prevCropRect.topLeft() + (cursorPos - mouseLeftClickedPos));
         break;
     case CR_TOPLEFT:
-        cropRect[CR_CENTER].setTopLeft(prevCropRect.topLeft() + (cursorPos - mouseLeftClickedPos));
+        cropRects[CR_CENTER].setTopLeft(prevCropRect.topLeft() + (cursorPos - mouseLeftClickedPos));
         break;
     case CR_TOP:
-        cropRect[CR_CENTER].setTop(prevCropRect.top() + (cursorPos.y() - mouseLeftClickedPos.y()));
+        cropRects[CR_CENTER].setTop(prevCropRect.top() + (cursorPos.y() - mouseLeftClickedPos.y()));
         break;
     case CR_TOPRIGHT:
-        cropRect[CR_CENTER].setTopRight(prevCropRect.topRight() + (cursorPos - mouseLeftClickedPos));
+        cropRects[CR_CENTER].setTopRight(prevCropRect.topRight() + (cursorPos - mouseLeftClickedPos));
         break;
     case CR_RIGHT:
-        cropRect[CR_CENTER].setRight(prevCropRect.right() + (cursorPos.x() - mouseLeftClickedPos.x()));
+        cropRects[CR_CENTER].setRight(prevCropRect.right() + (cursorPos.x() - mouseLeftClickedPos.x()));
         break;
     case CR_BOTTOMRIGHT:
-        cropRect[CR_CENTER].setBottomRight(prevCropRect.bottomRight() + (cursorPos - mouseLeftClickedPos));
+        cropRects[CR_CENTER].setBottomRight(prevCropRect.bottomRight() + (cursorPos - mouseLeftClickedPos));
         break;
     case CR_BOTTOM:
-        cropRect[CR_CENTER].setBottom(prevCropRect.bottom() + (cursorPos.y() - mouseLeftClickedPos.y()));
+        cropRects[CR_CENTER].setBottom(prevCropRect.bottom() + (cursorPos.y() - mouseLeftClickedPos.y()));
         break;
     case CR_BOTTOMLEFT:
-        cropRect[CR_CENTER].setBottomLeft(prevCropRect.bottomLeft() + (cursorPos - mouseLeftClickedPos));
+        cropRects[CR_CENTER].setBottomLeft(prevCropRect.bottomLeft() + (cursorPos - mouseLeftClickedPos));
         break;
     case CR_LEFT:
-        cropRect[CR_CENTER].setLeft(prevCropRect.left() + (cursorPos.x() - mouseLeftClickedPos.x()));
+        cropRects[CR_CENTER].setLeft(prevCropRect.left() + (cursorPos.x() - mouseLeftClickedPos.x()));
         break;
     default:
         break;
@@ -321,7 +329,7 @@ void ImageMarquees::exit()
 
 void ImageMarquees::reset()
 {
-    cropRect[CR_CENTER] = QRect(0, 0, 0, 0);
+    cropRects[CR_CENTER] = QRect(0, 0, 0, 0);
     prevCropRect = QRect(0, 0, 0, 0);
 
     isCropRectStable = false;
@@ -336,13 +344,13 @@ void ImageMarquees::reset()
 
 void ImageMarquees::cropPaintImage()
 {
-    cropRectInImage = getCropRectInImage(*paintImageRect, cropRect[CR_CENTER]);
+    cropRectInImage = getCropRectInImage(*paintImageRect, cropRects[CR_CENTER]);
     saveImage(paintImg, cropRectInImage);
 }
 
 void ImageMarquees::cropOriginalImage()
 {
-    cropRectInImage = getCropRectInImage(*paintImageRect, cropRect[CR_CENTER]);
+    cropRectInImage = getCropRectInImage(*paintImageRect, cropRects[CR_CENTER]);
     QPoint topLeft = getCursorPosInImage(inputImg->rect(), paintImg->rect(), cropRectInImage.topLeft(), std::round);
     QPoint bottomRight = getCursorPosInImage(inputImg->rect(), paintImg->rect(), cropRectInImage.bottomRight(), std::round) - QPoint(1, 1);
     cropRectInImage.setTopLeft(topLeft);
