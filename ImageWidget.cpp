@@ -424,9 +424,9 @@ void ImageWidget::setImageAttributeWithAutoFitFlag(bool enableAutoFit)
         // 根据Widget大小缩放图像
         paintImg = inputImg.scaled(this->width(), this->height(), Qt::KeepAspectRatio);
     } else {
-        zoomScale = 1.0;
         paintImg = inputImg;
     }
+    zoomScale = 1.0;
     // 计算图像在Widget中显示的左上坐标
     paintImageRect.setTopLeft(getImageTopLeftPosWhenShowInCenter(paintImg, this));
     paintImageRect.setSize(paintImg.size());
@@ -542,8 +542,7 @@ QPoint ImageWidget::getDrawImageTopLeftPos() const { return paintImageRect.topLe
 void ImageWidget::wheelEvent(QWheelEvent* e)
 {
     if (!inputImg.isNull() && !enableOnlyShowImage && enableZoomImage) {
-        int numDegrees = e->delta();
-        if (numDegrees > 0) {
+        if (e->angleDelta().x() < 0 || e->angleDelta().y() < 0) {
             imageZoomOut();
         } else {
             imageZoomIn();
