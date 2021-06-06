@@ -94,15 +94,8 @@ private:
 class ImageWidget : public QWidget {
     Q_OBJECT
 public:
-    // 静态空图像 用于释放内存
-    static const QImage NULL_QIMAGE;
-    // 静态变量 图像尺寸相关
-    static const QPoint NULL_POINT;
-    static const QSize NULL_SIZE;
-    static const QRect NULL_RECT;
     // 图像限定模式
     enum RestrictMode { RM_INNER, RM_OUTTER };
-
     explicit ImageWidget(QWidget* parent = nullptr);
     ~ImageWidget();
     // 对外统一呈现setImage()接口
@@ -116,6 +109,11 @@ public:
     ImageWidget* setEnableSendLeftClickedPosInWidget(bool flag = false);
     ImageWidget* setEnableSendLeftClickedPosInImage(bool flag = false);
     QPoint getDrawImageTopLeftPos() const;
+
+    // ROI相关
+    void addROI(const QRect& rect, int label);
+    void removeROI(int lable);
+    void removeAllROI();
 
 signals:
     void sendParentWidgetSizeChangedSignal();
@@ -144,6 +142,14 @@ private slots:
 
 protected:
 private:
+    // 默认背景颜色
+    static const QColor BACKGROUD_COLOR;
+    // 静态空图像 用于释放内存
+    static const QImage NULL_QIMAGE;
+    // 静态变量 图像尺寸相关
+    static const QPoint NULL_POINT;
+    static const QSize NULL_SIZE;
+    static const QRect NULL_RECT;
     // 放大倍率
     double MAX_ZOOM_SCALE = 20.0;
     double MIN_ZOOM_SCALE = 0.04;
@@ -168,6 +174,10 @@ private:
 
     QPoint mouseLeftKeyPressDownPos = NULL_POINT;
     QPoint paintImageLastTopLeft = NULL_POINT;
+
+    // ROI区域相关
+    // todo: 使用其他数据结构，减少遍历map，新增设置ROI区域颜色
+    std::unordered_map<int, QRect> roi;
 
     // status flags
     bool isCropImageMode = false;

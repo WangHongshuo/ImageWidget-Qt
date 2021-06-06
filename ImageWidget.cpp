@@ -20,9 +20,12 @@
 // static const var
 const char* ImageMarquees::ERR_MSG_NULL_IMAGE = "No Image Selected!";
 const char* ImageMarquees::ERR_MSG_INVALID_FILE_PATH = "Invalid File Path!";
-const ImageMarquees::CROPRECT ImageMarquees::CROPRECTGRP[3][3] = { { ImageMarquees::CR_TOPLEFT, ImageMarquees::CR_TOP, ImageMarquees::CR_TOPRIGHT },
+const ImageMarquees::CROPRECT ImageMarquees::CROPRECTGRP[3][3] = {
+    { ImageMarquees::CR_TOPLEFT, ImageMarquees::CR_TOP, ImageMarquees::CR_TOPRIGHT },
     { ImageMarquees::CR_LEFT, ImageMarquees::CR_CENTER, ImageMarquees::CR_RIGHT },
-    { ImageMarquees::CR_BOTTOMLEFT, ImageMarquees::CR_BOTTOM, ImageMarquees::CR_BOTTOMRIGHT } };
+    { ImageMarquees::CR_BOTTOMLEFT, ImageMarquees::CR_BOTTOM, ImageMarquees::CR_BOTTOMRIGHT }
+};
+
 const std::unordered_map<ImageMarquees::CROPRECT, Qt::CursorShape> ImageMarquees::CURSORCRPS = std::unordered_map<ImageMarquees::CROPRECT, Qt::CursorShape> {
     { ImageMarquees::CR_NULL, Qt::ArrowCursor }, { ImageMarquees::CR_CENTER, Qt::SizeAllCursor }, { ImageMarquees::CR_TOPLEFT, Qt::SizeFDiagCursor },
     { ImageMarquees::CR_TOPRIGHT, Qt::SizeBDiagCursor }, { ImageMarquees::CR_BOTTOMRIGHT, Qt::SizeFDiagCursor },
@@ -34,6 +37,8 @@ const QImage ImageWidget::NULL_QIMAGE = QImage();
 const QPoint ImageWidget::NULL_POINT = QPoint(0, 0);
 const QSize ImageWidget::NULL_SIZE = QSize(0, 0);
 const QRect ImageWidget::NULL_RECT = QRect(0, 0, 0, 0);
+const QColor ImageWidget::BACKGROUD_COLOR = QColor(200, 200, 200);
+
 
 ImageMarquees::ImageMarquees(QWidget* parent, int marqueesEdgeWidtht)
     : QWidget(parent)
@@ -382,6 +387,7 @@ ImageWidget::ImageWidget(QWidget* parent)
     isCropImageMode = false;
     imageWidgetPaintRect = QRect(-PAINT_AREA_OFFEST, -PAINT_AREA_OFFEST, this->width() + 2 * PAINT_AREA_OFFEST, this->height() + 2 * PAINT_AREA_OFFEST);
     initializeContextmenu();
+    roi.clear();
 }
 
 ImageWidget::~ImageWidget() {}
@@ -539,6 +545,24 @@ ImageWidget* ImageWidget::setEnableSendLeftClickedPosInImage(bool flag)
 
 QPoint ImageWidget::getDrawImageTopLeftPos() const { return paintImageRect.topLeft(); }
 
+void ImageWidget::addROI(const QRect &rect, int label)
+{
+    roi[label] = rect;
+    update();
+}
+
+void ImageWidget::removeROI(int lable)
+{
+    roi.erase(lable);
+    update();
+}
+
+void ImageWidget::removeAllROI()
+{
+    roi.clear();
+    update();
+}
+
 void ImageWidget::wheelEvent(QWheelEvent* e)
 {
     if (!inputImg.isNull() && !enableOnlyShowImage && enableZoomImage) {
@@ -662,11 +686,22 @@ void ImageWidget::mouseMoveEvent(QMouseEvent* e)
 void ImageWidget::paintEvent(QPaintEvent* e)
 {
     QPainter painter(this);
-    painter.setBrush(QBrush(QColor(200, 200, 200)));
+    painter.setBrush(QBrush(BACKGROUD_COLOR));
     painter.drawRect(0, 0, this->width(), this->height());
     if (!inputImg.isNull()) {
         painter.drawImage(paintImageRect.topLeft(), paintImg);
     }
+    if (roi.size() == 0) {
+        return;
+    }
+    QPainterPath roiRect;
+    // todo: 绘制中心透明的矩形，临时方案，后续减少Path数量
+    for (auto it = roi.begin(); it != roi.end(); ++it) {
+        roiRect.addRect(it->second);
+        roiRect.addRect(it->second);
+    }
+    painter.setPen(QPen(QColor(255, 0, 0, 255), 1));
+    painter.drawPath(roiRect);
 }
 
 void ImageWidget::contextMenuEvent(QContextMenuEvent* e)
