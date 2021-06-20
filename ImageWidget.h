@@ -16,13 +16,13 @@
 #ifndef IMAGEMARQUEES_H
 #define IMAGEMARQUEES_H
 
-// Common function
-QPoint getCursorPosInImage(const QRect& inputImgRect, const QRect& imageLeftTopPos, const QPoint& cursorPos, double (*procFunc)(double));
+// Common Function
+QPoint mappingCoordinate(const QRect& dstImgRect, const QRect& srcImgRect, const QPoint& srcPoint, double (*procFunc)(double));
 
 class ImageMarquees : public QWidget {
     Q_OBJECT
 public:
-    ImageMarquees(QWidget* parent = nullptr, int marqueesEdgeWidth = 10);
+    ImageMarquees(QWidget* parent = nullptr, int marqueesEdgeWidth = 6);
     ~ImageMarquees();
     void setImage(QImage* inputImg, QImage* paintImg, QRect* paintImageRect);
     void setMarqueesEdgeWidth(int width);
@@ -176,8 +176,8 @@ private:
     QPoint paintImageLastTopLeft = NULL_POINT;
 
     // ROI区域相关
-    // todo: 使用其他数据结构，减少遍历map，新增设置ROI区域颜色
-    std::unordered_map<int, QRect> roi;
+    // todo: 使用其他数据结构，减少遍历map，新增设置ROI区域颜色，first为原始，second为映射后的
+    std::unordered_map<int, std::pair<QRect, QRect>> roi;
 
     // status flags
     bool isCropImageMode = false;
@@ -206,7 +206,7 @@ private:
     QAction* mActionEnableZoom = nullptr;
     QAction* mActionImageAutoFitWidget = nullptr;
 
-    void updateZoomedImage();
+    void updateImageByWheelEvent();
     void imageZoomOut();
     void imageZoomIn();
     void initializeContextmenu();
